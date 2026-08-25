@@ -65,3 +65,6 @@ blue-code/
 ```
 
 -----
+
+⚠️ DISCLAIMER (Descargo de Responsabilidad)
+IMPORTANTE: Este software es un prototipo conceptual (demo) desarrollado exclusivamente con fines académicos para la Olimpiada Nacional de Educación Técnico Profesional 2026 (ONETP). El sistema implementa reglas de negocio simplificadas y carece de las certificaciones, auditorías de seguridad informática y controles éticos requeridos para operar en entornos médicos reales o gestionar datos sensibles de pacientes en producción. Los autores no se responsabilizan por el uso de este código, total o parcial, en cualquier entorno de atención sanitaria real.
