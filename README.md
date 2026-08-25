@@ -65,5 +65,3 @@ blue-code/
 ```
 
 -----
-
-¿Te gustaría que agregue las instrucciones específicas para levantar el entorno local de Node.js, React o Flutter en la sección de instalación?
