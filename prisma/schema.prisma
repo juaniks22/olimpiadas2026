@@ -1,15 +1,351 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Blue Code — schema.prisma
+// Basado en Documento de Visión v2.3 + decisiones confirmadas en chat (26 ago 2026):
+//  1. Cronología del evento: campos fijos (no tabla de hitos libres) — ver EventForm.
+//  2. Paciente: NO es entidad reusable. Sus datos viven embebidos en EventForm.
+//  3. ResponseTeamAssignment: nombre, rol, certificaciones y DNI por integrante,
+//     múltiples asignaciones posibles por posición (relevos) dentro de un mismo evento.
+//  4. User NO se vincula a Area/Shift (varía a diario) — Shift queda eliminado del modelo,
+//     Area es un catálogo configurable simple, referenciado por Call.
+//  5. Carro de paro: catálogo "estándar" único (posiciones + ítems + cantidad estándar)
+//     configurado por el Admin, separado de las instancias físicas de carro (lista libre,
+//     nombre en texto libre porque cada hospital numera distinto). El stock de cada carro
+//     se trackea en una tabla puente contra el catálogo estándar.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Cuentas de usuario
+// ---------------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  GENERIC
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  callsCreated          Call[]      @relation("CallCreatedBy")
+  crashCartsReactivated CrashCart[] @relation("CrashCartReactivatedBy")
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Áreas (catálogo configurable, CP-1) — sin vínculo a User ni Shift
+// ---------------------------------------------------------------------------
+
+model Area {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  calls Call[]
+
+  @@map("areas")
+}
+
+// ---------------------------------------------------------------------------
+// Llamado (Call) — clasificación + autoría; el filtro de visibilidad de las
+// cuentas GENERIC es createdByUserId, no areaId (regla de negocio en Service)
+// ---------------------------------------------------------------------------
+
+enum CallType {
+  NORMAL
+  EMERGENCY
+}
+
+enum CallOrigin {
+  INTRA_HOSPITAL
+  EXTRA_HOSPITAL
+}
+
+model Call {
+  id     String     @id @default(uuid())
+  type   CallType
+  origin CallOrigin
+
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id])
+
+  createdByUserId String
+  createdBy       User   @relation("CallCreatedBy", fields: [createdByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventForm    EventForm?
+  consumptions CrashCartConsumption[]
+
+  @@index([createdByUserId])
+  @@index([areaId])
+  @@map("calls")
+}
+
+// ---------------------------------------------------------------------------
+// Formulario del evento estilo Utstein (1:1 con Call)
+// Incluye datos de paciente embebidos (no reusables) y cronología como
+// campos fijos, para poder calcular tiempo promedio de respuesta (CP-6).
+// ---------------------------------------------------------------------------
+
+enum PatientIdentificationType {
+  DNI
+  TEMPORARY_ID
+  NN
+}
+
+model EventForm {
+  id String @id @default(uuid())
+
+  callId String @unique
+  call   Call   @relation(fields: [callId], references: [id])
+
+  // --- Paciente (embebido, no reusable — confirmado con el usuario) ---
+  patientIdentificationType PatientIdentificationType
+  patientDni                String?
+  patientTemporaryId        String?
+  patientSex                String?
+  patientAge                Int?
+  admissionDate              DateTime?
+  timeSinceDiscoveryMinutes Int?
+
+  // --- Cronología (campos fijos, confirmado con el usuario) ---
+  // callReceivedAt: hora de activación/recepción del código azul
+  // teamArrivalAt: hora de llegada del equipo de respuesta
+  // cprStartedAt: inicio de compresiones/RCP
+  // returnOfSpontaneousCirculationAt: hora de RCE, si se logró (nullable)
+  // eventEndedAt: hora de finalización/suspensión del evento
+  callReceivedAt                   DateTime?
+  teamArrivalAt                    DateTime?
+  cprStartedAt                     DateTime?
+  returnOfSpontaneousCirculationAt DateTime?
+  eventEndedAt                     DateTime?
+
+  // --- Manejo de vía aérea y accesos venosos ---
+  airwayManagement String?
+  venousAccess     String?
+
+  // --- Estado post-reanimación / cierre ---
+  postResuscitationStatus String?
+  suspensionCause         String?
+
+  // --- Carro de paro utilizado en el evento (si corresponde) ---
+  crashCartId String?
+  crashCart   CrashCart? @relation(fields: [crashCartId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  defibrillations    DefibrillationRecord[]
+  drugsAdministered   DrugAdministered[]
+  teamAssignments     ResponseTeamAssignment[]
+
+  @@map("event_forms")
+}
+
+// Descargas de desfibrilación — repetibles dentro de un EventForm
+model DefibrillationRecord {
+  id String @id @default(uuid())
+
+  eventFormId String
+  eventForm   EventForm @relation(fields: [eventFormId], references: [id])
+
+  sequenceNumber  Int
+  performedAt     DateTime
+  energyDelivered Float?
+  rhythm          String?
+
+  @@index([eventFormId])
+  @@map("defibrillation_records")
+}
+
+// Drogas administradas — repetibles dentro de un EventForm
+model DrugAdministered {
+  id String @id @default(uuid())
+
+  eventFormId String
+  eventForm   EventForm @relation(fields: [eventFormId], references: [id])
+
+  drugName       String
+  dose           Float
+  unit           String
+  route          String?
+  administeredAt DateTime
+
+  @@index([eventFormId])
+  @@map("drugs_administered")
+}
+
+// ---------------------------------------------------------------------------
+// Equipo de respuesta — posiciones configurables, integrantes sin cuenta
+// ---------------------------------------------------------------------------
+
+model ResponseTeamPosition {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  isActive Boolean @default(true)
+
+  assignments ResponseTeamAssignment[]
+
+  @@map("response_team_positions")
+}
+
+// Catálogo reusable de personal (confirmado con el usuario — opción B).
+// Un mismo integrante puede participar en muchos eventos; sus datos personales
+// se cargan una sola vez acá y se referencian por FK desde cada asignación.
+// Sigue sin tener cuenta de login (no es un User) — es solo un dato descriptivo
+// centralizado del equipo de respuesta.
+model StaffMember {
+  id             String  @id @default(uuid())
+  dni            String  @unique
+  name           String
+  role           String?
+  certifications String?
+  isActive       Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignments ResponseTeamAssignment[]
+
+  @@map("staff_members")
+}
+
+// Un integrante cargado por evento y posición. Una misma posición puede tener
+// varias filas en el mismo EventForm (relevos durante el evento), y un mismo
+// StaffMember puede repetirse en distintos eventos (o incluso distintas
+// posiciones dentro del mismo evento).
+model ResponseTeamAssignment {
+  id String @id @default(uuid())
+
+  eventFormId String
+  eventForm   EventForm @relation(fields: [eventFormId], references: [id])
+
+  positionId String
+  position   ResponseTeamPosition @relation(fields: [positionId], references: [id])
+
+  staffMemberId String
+  staffMember   StaffMember @relation(fields: [staffMemberId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([eventFormId])
+  @@index([positionId])
+  @@index([staffMemberId])
+  @@map("response_team_assignments")
+}
+
+// ---------------------------------------------------------------------------
+// Carro de paro
+// Catálogo ESTÁNDAR (qué debe tener cada carro, cantidad de referencia) +
+// instancias físicas (varios carros, nombre libre) + stock real por carro.
+// ---------------------------------------------------------------------------
+
+model CrashCartPosition {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  isActive Boolean @default(true)
+
+  items CrashCartItem[]
+
+  @@map("crash_cart_positions")
+}
+
+// Ítem del estándar: define qué debe tener cada carro y en qué cantidad
+model CrashCartItem {
+  id String @id @default(uuid())
+
+  positionId String
+  position   CrashCartPosition @relation(fields: [positionId], references: [id])
+
+  name             String
+  standardQuantity Int
+  unit             String?
+
+  stocks       CrashCartItemStock[]
+  consumptions CrashCartConsumption[]
+
+  @@index([positionId])
+  @@map("crash_cart_items")
+}
+
+enum CrashCartStatus {
+  IN_SERVICE
+  OUT_OF_SERVICE
+}
+
+// Instancia física de un carro (lista libre, nombre en texto libre porque
+// cada hospital numera los carros de forma distinta)
+model CrashCart {
+  id     String          @id @default(uuid())
+  name   String          @unique
+  status CrashCartStatus @default(IN_SERVICE)
+
+  reactivatedAt       DateTime?
+  reactivatedByUserId String?
+  reactivatedBy       User?     @relation("CrashCartReactivatedBy", fields: [reactivatedByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stocks       CrashCartItemStock[]
+  consumptions CrashCartConsumption[]
+  eventForms   EventForm[]
+
+  @@map("crash_carts")
+}
+
+// Stock real de cada carro físico contra el catálogo estándar de ítems.
+// Se inicializa con standardQuantity al crear el carro (regla de Service),
+// se decrementa con cada consumo, se resetea al reactivar tras reposición.
+model CrashCartItemStock {
+  id String @id @default(uuid())
+
+  crashCartId String
+  crashCart   CrashCart @relation(fields: [crashCartId], references: [id])
+
+  crashCartItemId String
+  crashCartItem   CrashCartItem @relation(fields: [crashCartItemId], references: [id])
+
+  intactUnitsRemaining Int
+
+  @@unique([crashCartId, crashCartItemId])
+  @@map("crash_cart_item_stocks")
+}
+
+// Historial de consumo — auditoría. Cualquier fila nueva acá dispara el
+// cambio de CrashCart.status a OUT_OF_SERVICE (regla de negocio en Service).
+model CrashCartConsumption {
+  id String @id @default(uuid())
+
+  callId String
+  call   Call   @relation(fields: [callId], references: [id])
+
+  crashCartId String
+  crashCart   CrashCart @relation(fields: [crashCartId], references: [id])
+
+  crashCartItemId String
+  crashCartItem   CrashCartItem @relation(fields: [crashCartItemId], references: [id])
+
+  quantity   Int
+  consumedAt DateTime @default(now())
+
+  @@index([callId])
+  @@index([crashCartId])
+  @@map("crash_cart_consumptions")
 }
