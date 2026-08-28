@@ -44,6 +44,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [selectedCallForDetail, setSelectedCallForDetail] = useState(null);
 
   // Paginación
@@ -106,7 +107,7 @@ export default function ReportsPage() {
     };
 
     fetchReportsData();
-  }, [API_URL, token, filters]);
+  }, [API_URL, token, filters, seeding]);
 
   // Manejo de cambios en filtros
   const handleFilterChange = (field, value) => {
@@ -172,6 +173,29 @@ export default function ReportsPage() {
     }
   };
 
+  // Seed demo data
+  const handleSeedDemo = async () => {
+    if (!confirm('¿Crear datos de demostración? Se agregarán ~25 llamados de prueba.')) return;
+    setSeeding(true);
+    try {
+      const res = await fetch(`${API_URL}/api/reports/seed-demo`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        alert(data.message || `Se crearon ${data.created} registros.`);
+      } else {
+        alert('Error al crear datos demo.');
+      }
+    } catch (err) {
+      console.error('Error seed demo:', err);
+      alert('Error de conexión al crear datos demo.');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   // Datos para gráfico temporal Recharts
   const chartData = useMemo(() => {
     if (!calls.length) return [];
@@ -211,6 +235,22 @@ export default function ReportsPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+          <button
+            id="btn-seed-demo"
+            className="btn btn-secondary"
+            onClick={handleSeedDemo}
+            disabled={loading || seeding || calls.length > 0}
+            title="Crear datos de demostración para ver estadísticas"
+            style={{ gap: '6px' }}
+          >
+            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3" />
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+            </svg>
+            {seeding ? 'Creando...' : 'Rellenar Datos Demo'}
+          </button>
+
           <button
             id="btn-export-pdf"
             className="btn btn-primary"
@@ -261,7 +301,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* 2. Barra de Filtros Avanzados y Combinables (OLI-87, OLI-88) */}
+      {/* 2. Barra de Filtros Compacta (OLI-87, OLI-88) */}
       <div className="card-flat report-filter-card" style={{ marginBottom: 'var(--space-xl)' }}>
         <div className="filter-card-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -285,22 +325,21 @@ export default function ReportsPage() {
           )}
         </div>
 
-        <div className="filter-grid">
-          {/* Flatpickr Calendar Range (OLI-88) */}
-          <div className="filter-item filter-item-wide">
+        {/* Fila 1: Fecha + Búsqueda + Área */}
+        <div className="filter-grid" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>
+          <div className="filter-item">
             <label>Rango de Fechas</label>
             <FlatpickrRangePicker
               dateFrom={filters.dateFrom}
               dateTo={filters.dateTo}
               onChange={handleDateRangeChange}
-              placeholder="Todas las fechas o elige rango..."
+              placeholder="Todas las fechas..."
               showPresets={true}
             />
           </div>
 
-          {/* Búsqueda por Texto Libre */}
           <div className="filter-item">
-            <label htmlFor="filter-search">Búsqueda Rápida</label>
+            <label htmlFor="filter-search">Búsqueda</label>
             <div className="search-input">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />
@@ -310,23 +349,22 @@ export default function ReportsPage() {
                 id="filter-search"
                 type="text"
                 className="input"
-                placeholder="Paciente DNI, área, usuario..."
+                placeholder="DNI, área, usuario..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
               />
             </div>
           </div>
 
-          {/* Selector de Área */}
           <div className="filter-item">
-            <label htmlFor="filter-area">Área Hospitalaria</label>
+            <label htmlFor="filter-area">Área</label>
             <select
               id="filter-area"
               className="select"
               value={filters.areaId}
               onChange={(e) => handleFilterChange('areaId', e.target.value)}
             >
-              <option value="">Todas las áreas</option>
+              <option value="">Todas</option>
               {areas.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -334,23 +372,24 @@ export default function ReportsPage() {
               ))}
             </select>
           </div>
+        </div>
 
-          {/* Selector de Urgencia / Tipo */}
+        {/* Fila 2: Tipo + Origen + Orden (compacta) */}
+        <div className="filter-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 'var(--space-md)' }}>
           <div className="filter-item">
-            <label htmlFor="filter-type">Urgencia / Tipo</label>
+            <label htmlFor="filter-type">Tipo</label>
             <select
               id="filter-type"
               className="select"
               value={filters.type}
               onChange={(e) => handleFilterChange('type', e.target.value)}
             >
-              <option value="">Todos los tipos</option>
-              <option value="EMERGENCY">Emergencia (Código Azul)</option>
+              <option value="">Todos</option>
+              <option value="EMERGENCY">Emergencia</option>
               <option value="NORMAL">Normal</option>
             </select>
           </div>
 
-          {/* Selector de Origen */}
           <div className="filter-item">
             <label htmlFor="filter-origin">Origen</label>
             <select
@@ -359,35 +398,36 @@ export default function ReportsPage() {
               value={filters.origin}
               onChange={(e) => handleFilterChange('origin', e.target.value)}
             >
-              <option value="">Todos los orígenes</option>
+              <option value="">Todos</option>
               <option value="INTRA_HOSPITAL">Intrahospitalario</option>
               <option value="EXTRA_HOSPITAL">Extrahospitalario</option>
             </select>
           </div>
 
-          {/* Orden de Fecha */}
           <div className="filter-item">
-            <label htmlFor="filter-order">Orden por Fecha</label>
+            <label htmlFor="filter-order">Orden</label>
             <select
               id="filter-order"
               className="select"
               value={filters.sortOrder}
               onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
             >
-              <option value="desc">Más recientes primero</option>
-              <option value="asc">Más antiguos primero</option>
+              <option value="desc">Más recientes</option>
+              <option value="asc">Más antiguos</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* 3. Resumen de Métricas (KPI Cards) */}
+      {/* 3. Resumen de Métricas (KPI Cards) — SVG icons */}
       <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-card-header">
             <span className="kpi-card-label">Total de Eventos</span>
             <div className="kpi-card-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#3B82F6' }}>
-              📞
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
             </div>
           </div>
           <div className="kpi-card-value">{summary.totalCalls}</div>
@@ -400,7 +440,10 @@ export default function ReportsPage() {
           <div className="kpi-card-header">
             <span className="kpi-card-label">T. Promedio Respuesta</span>
             <div className="kpi-card-icon" style={{ background: 'rgba(244, 63, 94, 0.12)', color: '#F43F5E' }}>
-              ⏱️
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
             </div>
           </div>
           <div className="kpi-card-value">
@@ -410,7 +453,7 @@ export default function ReportsPage() {
             </span>
           </div>
           <div className="kpi-card-subtitle" style={{ color: summary.averageResponseTimeMinutes && summary.averageResponseTimeMinutes <= 3 ? 'var(--color-success)' : 'var(--text-secondary)' }}>
-            {summary.averageResponseTimeMinutes && summary.averageResponseTimeMinutes <= 3 ? '✓ Cumple objetivo (< 3m)' : 'Meta estándar: < 3 min'}
+            {summary.averageResponseTimeMinutes && summary.averageResponseTimeMinutes <= 3 ? 'Cumple objetivo (< 3m)' : 'Meta estándar: < 3 min'}
           </div>
         </div>
 
@@ -418,7 +461,10 @@ export default function ReportsPage() {
           <div className="kpi-card-header">
             <span className="kpi-card-label">Tasa RCE (Éxito RCP)</span>
             <div className="kpi-card-icon" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}>
-              ❤️
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z" />
+                <path d="M3.5 12h6l1-2 2 4 1.5-3 1.5 1h5" />
+              </svg>
             </div>
           </div>
           <div className="kpi-card-value">{summary.survivalRatePercent}%</div>
@@ -431,7 +477,11 @@ export default function ReportsPage() {
           <div className="kpi-card-header">
             <span className="kpi-card-label">Emergencias / Normal</span>
             <div className="kpi-card-icon" style={{ background: 'rgba(139, 92, 246, 0.12)', color: '#8B5CF6' }}>
-              📊
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
             </div>
           </div>
           <div className="kpi-card-value">

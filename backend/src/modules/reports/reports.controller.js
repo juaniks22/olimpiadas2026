@@ -1,4 +1,5 @@
 const service = require("./reports.service");
+const { seedDemoData } = require("./seedDemoData");
 
 module.exports = {
   summary: async (req, res) => res.json(await service.summary(req.query)),
@@ -18,4 +19,10 @@ module.exports = {
     res.setHeader("Content-Disposition", 'attachment; filename="blue-code-reporte.pdf"');
     res.send(pdf);
   },
+
+  seedDemo: async (req, res) => {
+    const result = await seedDemoData();
+    res.json(result);
+  },
 };
+
