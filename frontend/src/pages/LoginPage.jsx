@@ -1,5 +1,6 @@
 import { useState, useContext } from 'react';
 import { AuthContext } from '../App';
+import HeartPulseIcon from '../components/HeartPulseIcon';
 
 export default function LoginPage() {
   const { login, API_URL } = useContext(AuthContext);
@@ -43,7 +44,9 @@ export default function LoginPage() {
       <div className="login-container fade-in">
         {/* Hero Section */}
         <div className="login-hero">
-          <div className="login-hero-icon">+</div>
+          <div className="login-hero-icon">
+            <HeartPulseIcon size={24} color="white" />
+          </div>
           <h2>Gestión de Emergencias</h2>
           <p>Plataforma integral para auditoría y registro clínico Utstein.</p>
           <div className="login-hero-footer">

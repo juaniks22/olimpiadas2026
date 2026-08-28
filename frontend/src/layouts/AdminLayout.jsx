@@ -1,6 +1,7 @@
 import { useContext, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
+import HeartPulseIcon from '../components/HeartPulseIcon';
 
 const navItems = [
   { to: '/admin', label: 'Dashboard', icon: '', end: true },
@@ -30,7 +31,9 @@ export default function AdminLayout() {
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <div className="sidebar-brand-icon">+</div>
+          <div className="sidebar-brand-icon">
+            <HeartPulseIcon size={20} color="white" />
+          </div>
           <span className="sidebar-brand-text">BlueCode</span>
         </div>
 
