@@ -42,7 +42,8 @@ export default function UsersPage() {
       
       if (!res.ok) {
         const errorData = await res.json();
-        setErrorMsg(errorData.error || 'Error al crear la cuenta');
+        // El backend responde { error: { message, details } }: leer .error.message.
+        setErrorMsg(errorData?.error?.message || 'Error al crear la cuenta');
         return;
       }
 

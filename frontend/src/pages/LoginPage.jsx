@@ -23,7 +23,11 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Credenciales incorrectas');
+        // El backend responde { error: { message, details } }.
+        // Hay que leer .error.message, no .error (que es un objeto → "[object Object]").
+        const message =
+          data?.error?.message || data?.message || 'Usuario o contraseña incorrectos';
+        throw new Error(message);
       }
 
       login(data.token, data.user);
