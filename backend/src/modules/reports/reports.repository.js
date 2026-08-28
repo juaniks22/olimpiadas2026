@@ -1,26 +1,45 @@
 const prisma = require("../../config/prisma");
 
-function callWhere(f) {
+function callWhere(f = {}) {
   const where = {};
   if (f.areaId) where.areaId = f.areaId;
   if (f.origin) where.origin = f.origin;
   if (f.type) where.type = f.type;
   if (f.from || f.to) {
-    where.createdAt = { ...(f.from ? { gte: f.from } : {}), ...(f.to ? { lte: f.to } : {}) };
+    where.createdAt = {
+      ...(f.from ? { gte: f.from } : {}),
+      ...(f.to ? { lte: f.to } : {}),
+    };
+  }
+  if (f.search && typeof f.search === "string" && f.search.trim()) {
+    const s = f.search.trim();
+    where.OR = [
+      { area: { name: { contains: s, mode: "insensitive" } } },
+      { createdBy: { username: { contains: s, mode: "insensitive" } } },
+      { eventForm: { patientDni: { contains: s, mode: "insensitive" } } },
+      { eventForm: { patientTemporaryId: { contains: s, mode: "insensitive" } } },
+    ];
   }
   return where;
 }
 
 module.exports = {
   callWhere,
-  calls: (f) =>
+  calls: (f = {}) =>
     prisma.call.findMany({
       where: callWhere(f),
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: f.sortOrder === "asc" ? "asc" : "desc" },
       include: {
         area: true,
-        createdBy: { select: { username: true } },
-        eventForm: true,
+        createdBy: { select: { id: true, username: true } },
+        eventForm: {
+          include: {
+            defibrillations: { orderBy: { sequenceNumber: "asc" } },
+            drugsAdministered: { orderBy: { administeredAt: "asc" } },
+            teamAssignments: { include: { position: true } },
+            crashCart: { select: { id: true, name: true, status: true } },
+          },
+        },
       },
     }),
   countByType: (f) =>
@@ -35,7 +54,7 @@ module.exports = {
         reactivatedBy: { select: { username: true } },
       },
     }),
-  consumptions: (f) =>
+  consumptions: (f = {}) =>
     prisma.crashCartConsumption.findMany({
       where:
         f.from || f.to
@@ -45,3 +64,4 @@ module.exports = {
       orderBy: { consumedAt: "desc" },
     }),
 };
+
