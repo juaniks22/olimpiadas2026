@@ -17,6 +17,16 @@
   box-sizing: border-box;
 }
 
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+}
+
 /* --- Design Tokens — Light Mode (Genérico / Jefe de Piso) --- */
 :root {
   /* Fondos */
@@ -417,6 +427,12 @@ table tr:hover td {
   font-weight: 500;
   color: var(--text-secondary);
   text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
   transition: all var(--transition-fast);
 }
 
@@ -429,6 +445,17 @@ table tr:hover td {
 .sidebar-link.active {
   background: var(--color-primary);
   color: var(--text-on-primary);
+}
+
+.sidebar-logout {
+  margin-top: auto;
+  color: var(--text-secondary);
+}
+
+.sidebar-logout:hover {
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--color-danger);
+  border-color: rgba(244, 63, 94, 0.2);
 }
 
 .sidebar-link svg,
