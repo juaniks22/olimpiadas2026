@@ -41,7 +41,7 @@ app.use("/api", apiRouter);
 
 // Serve Frontend in Production
 app.use(express.static(path.join(__dirname, "../../../frontend/dist")));
-app.get("*", (req, res, next) => {
+app.get(/(.*)/, (req, res, next) => {
   if (req.path.startsWith("/api")) {
     return next();
   }
