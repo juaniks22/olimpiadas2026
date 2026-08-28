@@ -4,7 +4,8 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "postinstall": "prisma generate",
+    "start": "prisma generate && node src/server.js",
     "dev": "node --watch src/server.js",
     "build": "prisma generate",
     "seed:admin": "node scripts/seedAdmin.js",
