@@ -4,18 +4,12 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
-<<<<<<< HEAD
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "build": "prisma generate",
     "seed:admin": "node scripts/seedAdmin.js",
     "prisma:studio": "prisma studio",
-    "prisma:migrate": "prisma migrate dev",
-    "test": "echo \"Error: no test specified\" && exit 1"
-=======
-    "start": "node index.js",
-    "dev": "node --watch index.js",
-    "build": "prisma generate"
->>>>>>> 2196cf8466fe0d352eb53e8600c0419976b9f142
+    "prisma:migrate": "prisma migrate dev"
   },
   "keywords": [],
   "author": "",
@@ -29,5 +23,11 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "prisma": "^6.19.3"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "bcrypt@6.0.0": true,
+    "prisma@6.19.3": true
   }
 }

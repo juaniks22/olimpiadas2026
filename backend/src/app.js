@@ -23,16 +23,20 @@ app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", (req, res) => res.json({ status: "ok", service: "blue-code-api" }));
 
-app.use("/auth", authRoutes);
-app.use("/users", usersRoutes);
-app.use("/areas", areasRoutes);
-app.use("/calls", callsRoutes);
-app.use("/response-team-positions", responseTeamRoutes.positions);
-app.use("/staff-members", responseTeamRoutes.staff);
-app.use("/crash-cart-positions", crashCartsRoutes.positions);
-app.use("/crash-cart-items", crashCartsRoutes.items);
-app.use("/crash-carts", crashCartsRoutes.carts);
-app.use("/reports", reportsRoutes);
+const apiRouter = express.Router();
+
+apiRouter.use("/auth", authRoutes);
+apiRouter.use("/users", usersRoutes);
+apiRouter.use("/areas", areasRoutes);
+apiRouter.use("/calls", callsRoutes);
+apiRouter.use("/response-team-positions", responseTeamRoutes.positions);
+apiRouter.use("/staff-members", responseTeamRoutes.staff);
+apiRouter.use("/crash-cart-positions", crashCartsRoutes.positions);
+apiRouter.use("/crash-cart-items", crashCartsRoutes.items);
+apiRouter.use("/crash-carts", crashCartsRoutes.carts);
+apiRouter.use("/reports", reportsRoutes);
+
+app.use("/api", apiRouter);
 
 app.use(notFound);
 app.use(errorHandler);
