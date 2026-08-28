@@ -40,13 +40,9 @@ apiRouter.use("/reports", reportsRoutes);
 app.use("/api", apiRouter);
 
 // Serve Frontend in Production
-<<<<<<< HEAD
-app.use(express.static(path.join(__dirname, "../../../frontend/dist")));
-app.get("/*splat", (req, res, next) => {
-=======
+// __dirname = backend/src → ../../frontend/dist = olimpiadas/frontend/dist
 app.use(express.static(path.join(__dirname, "../../frontend/dist")));
 app.get(/(.*)/, (req, res, next) => {
->>>>>>> 1bf68681499a60c09524be319085bcd27458fd34
   if (req.path.startsWith("/api")) {
     return next();
   }
