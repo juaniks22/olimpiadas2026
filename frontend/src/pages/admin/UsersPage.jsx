@@ -42,8 +42,12 @@ export default function UsersPage() {
       
       if (!res.ok) {
         const errorData = await res.json();
+<<<<<<< HEAD
         // El backend responde { error: { message, details } }: leer .error.message.
         setErrorMsg(errorData?.error?.message || 'Error al crear la cuenta');
+=======
+        setErrorMsg(errorData.error?.message || 'Error al crear la cuenta');
+>>>>>>> 1bf68681499a60c09524be319085bcd27458fd34
         return;
       }
 
@@ -60,13 +64,13 @@ export default function UsersPage() {
     const action = user.isActive ? 'desactivar' : 'activar';
     if (!confirm(`¿${action} la cuenta de "${user.username}"?`)) return;
     try {
-      await fetch(`${API_URL}/api/users/${user.id}`, {
-        method: 'PUT',
+      const endpoint = user.isActive ? 'deactivate' : 'reactivate';
+      await fetch(`${API_URL}/api/users/${user.id}/${endpoint}`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ isActive: !user.isActive }),
+        }
       });
       fetchUsers();
     } catch (err) {
