@@ -22,20 +22,6 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('bc_token'));
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (token) {
-      // Decode JWT payload to get user info
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser({ id: payload.id, username: payload.username, role: payload.role });
-      } catch {
-        localStorage.removeItem('bc_token');
-        setToken(null);
-      }
-    }
-    setLoading(false);
-  }, [token]);
-
   const login = (newToken, userData) => {
     localStorage.setItem('bc_token', newToken);
     setToken(newToken);
@@ -47,6 +33,36 @@ function App() {
     setToken(null);
     setUser(null);
   };
+
+  useEffect(() => {
+    let timeoutId;
+    if (token) {
+      // Decode JWT payload to get user info
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUser({ id: payload.sub || payload.id, username: payload.username, role: payload.role });
+        
+        if (payload.exp) {
+          const timeUntilExp = (payload.exp * 1000) - Date.now();
+          if (timeUntilExp <= 0) {
+            logout();
+          } else {
+            timeoutId = setTimeout(() => {
+              alert('Sesión expirada por límite de tiempo. Por favor, vuelva a iniciar sesión.');
+              logout();
+            }, timeUntilExp);
+          }
+        }
+      } catch {
+        logout();
+      }
+    }
+    setLoading(false);
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [token]);
 
   // Interceptor global para cerrar sesión cuando el token expira (backend retorna 401)
   useEffect(() => {
