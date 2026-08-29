@@ -191,7 +191,6 @@ export default function CreateCallWizard({ onClose, onCreated }) {
 
   useEffect(() => { loadCartForArea(areaId); }, [areaId, loadCartForArea]);
 
-  // ─── Validation per step ──────────────────────────────────────────────────
   const canAdvance = () => {
     switch (step) {
       case 1: return !!areaId;
@@ -200,9 +199,36 @@ export default function CreateCallWizard({ onClose, onCreated }) {
         if (patientIdType === 'TEMPORARY_ID' && !patientTempId.trim()) return false;
         return true;
       }
-      case 3: return true; // all optional
-      case 4: return true;
-      case 5: return true;
+      case 3: {
+        // Validación cronológica (que ningún tiempo sea anterior al anterior)
+        const times = [callReceivedAt, teamArrivalAt, cprStartedAt, roscAt, eventEndedAt]
+          .filter(Boolean)
+          .map(t => new Date(t).getTime());
+        for (let i = 0; i < times.length - 1; i++) {
+          if (times[i] > times[i+1]) return false;
+        }
+        return true;
+      }
+      case 4: {
+        // Validar que no haya campos vacíos en desfibrilaciones ni tiempos anteriores a la recepción
+        for (const d of defibs) {
+          if (!d.performedAt || !d.energyDelivered || !d.rhythm || !d.sequenceNumber) return false;
+          if (callReceivedAt && new Date(d.performedAt) < new Date(callReceivedAt)) return false;
+        }
+        // Validar que no haya campos vacíos en drogas
+        for (const d of drugs) {
+          if (!d.crashCartItemId || !d.dose || !d.unit || !d.route || !d.administeredAt) return false;
+          if (callReceivedAt && new Date(d.administeredAt) < new Date(callReceivedAt)) return false;
+        }
+        return true;
+      }
+      case 5: {
+        // Validar que no haya asignaciones de equipo a medias
+        for (const a of teamAssignments) {
+          if (!a.positionId || !a.staffMemberId) return false;
+        }
+        return true;
+      }
       default: return true;
     }
   };
@@ -641,7 +667,7 @@ function Step4Clinical({
           <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 8, padding: '8px 12px', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)' }}>
             <div className="input-group" style={{ margin: 0, minWidth: 50 }}>
               <label style={{ fontSize: '0.75rem' }}>N°</label>
-              <input className="input" type="number" style={{ width: 50 }} value={d.sequenceNumber} readOnly />
+              <input className="input" type="number" style={{ width: 50 }} value={d.sequenceNumber} onChange={e => updateDefib(i, 'sequenceNumber', e.target.value)} />
             </div>
             <div className="input-group" style={{ margin: 0 }}>
               <label style={{ fontSize: '0.75rem' }}>Hora</label>
@@ -688,7 +714,7 @@ function Step4Clinical({
             </div>
             <div className="input-group" style={{ margin: 0, minWidth: 70 }}>
               <label style={{ fontSize: '0.75rem' }}>Unidad</label>
-              <input className="input" type="text" style={{ width: 70 }} value={d.unit} readOnly />
+              <input className="input" type="text" style={{ width: 70 }} value={d.unit} onChange={e => updateDrug(i, 'unit', e.target.value)} />
             </div>
             <div className="input-group" style={{ margin: 0, minWidth: 80 }}>
               <label style={{ fontSize: '0.75rem' }}>Vía</label>
