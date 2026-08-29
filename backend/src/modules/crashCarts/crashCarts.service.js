@@ -218,6 +218,23 @@ async function listConsumptions(id) {
   return repo.carts.consumptions(id);
 }
 
+async function deleteCart(id) {
+  const cart = await repo.carts.findById(id);
+  if (!cart) throw new AppError(404, "Carro no encontrado");
+  const [consumos, eventos] = await Promise.all([
+    repo.carts.countConsumptions(id),
+    repo.carts.countEventForms(id),
+  ]);
+  if (consumos > 0) {
+    throw new AppError(409, "No se puede eliminar el carro: tiene consumos registrados", { consumos });
+  }
+  if (eventos > 0) {
+    throw new AppError(409, "No se puede eliminar el carro: está referenciado en eventos", { eventos });
+  }
+  await repo.carts.remove(id);
+  return { ok: true };
+}
+
 module.exports = {
   listPositions,
   createPosition,
@@ -235,4 +252,5 @@ module.exports = {
   updateCart,
   reactivate,
   listConsumptions,
+  deleteCart,
 };

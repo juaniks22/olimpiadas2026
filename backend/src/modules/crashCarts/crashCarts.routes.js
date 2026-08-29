@@ -29,6 +29,7 @@ carts.get("/:id/consumptions", controller.listConsumptions);
 carts.post("/", authorize("ADMIN"), controller.createCart);
 carts.post("/:id/load-default-composition", authorize("ADMIN"), controller.loadDefaultComposition);
 carts.patch("/:id", authorize("ADMIN"), controller.updateCart);
+carts.delete("/:id", authorize("ADMIN"), controller.deleteCart);
 carts.post("/:id/reactivate", authorize("ADMIN"), controller.reactivate);
 
 module.exports = { positions, items, carts };

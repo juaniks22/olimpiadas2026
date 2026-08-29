@@ -66,5 +66,16 @@ module.exports = {
         data: { status: "IN_SERVICE", reactivatedAt: new Date(), reactivatedByUserId: userId },
         include: { area: true },
       }),
+
+    // Contadores de dependencias (para validar antes de borrar).
+    countConsumptions: (id) => prisma.crashCartConsumption.count({ where: { crashCartId: id } }),
+    countEventForms: (id) => prisma.eventForm.count({ where: { crashCartId: id } }),
+
+    // Borrado real: elimina ítems y luego el carro, en transacción.
+    remove: (id) =>
+      prisma.$transaction(async (tx) => {
+        await tx.crashCartItem.deleteMany({ where: { crashCartId: id } });
+        await tx.crashCart.delete({ where: { id } });
+      }),
   },
 };

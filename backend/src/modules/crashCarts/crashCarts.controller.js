@@ -20,4 +20,5 @@ module.exports = {
     res.json(await service.loadDefaultComposition(req.params.id)),
   updateCart: async (req, res) => res.json(await service.updateCart(req.params.id, req.body)),
   reactivate: async (req, res) => res.json(await service.reactivate(req.params.id, req.user.id)),
+  deleteCart: async (req, res) => res.json(await service.deleteCart(req.params.id)),
 };
