@@ -46,6 +46,26 @@ function App() {
     setUser(null);
   };
 
+  // Interceptor global para cerrar sesión cuando el token expira (backend retorna 401)
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      // Si recibimos 401 en cualquier endpoint que no sea el de login, la sesión expiró.
+      if (response.status === 401 && !response.url.includes('/api/auth/login')) {
+        const currentToken = localStorage.getItem('bc_token');
+        if (currentToken) {
+          alert('Sesión expirada por inactividad. Por favor, vuelva a iniciar sesión.');
+          logout();
+        }
+      }
+      return response;
+    };
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
   if (loading) return null;
 
   return (
