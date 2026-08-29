@@ -514,7 +514,7 @@ function Step2Patient({
 
         <div className="input-group">
           <label htmlFor="wiz-admission">Fecha de Ingreso</label>
-          <input id="wiz-admission" className="input" type="datetime-local" value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} />
+          <input id="wiz-admission" className="input" type="datetime-local" step="1" value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} />
         </div>
 
         {origin === 'EXTRA_HOSPITAL' && (
@@ -554,7 +554,7 @@ function Step3Chronology({
         {timeFields.map(f => (
           <div className="input-group" key={f.id}>
             <label htmlFor={f.id}>{f.label}</label>
-            <input id={f.id} className="input" type="datetime-local" value={f.value} onChange={e => f.set(e.target.value)} />
+            <input id={f.id} className="input" type="datetime-local" step="1" value={f.value} onChange={e => f.set(e.target.value)} />
           </div>
         ))}
       </div>
@@ -645,7 +645,7 @@ function Step4Clinical({
             </div>
             <div className="input-group" style={{ margin: 0 }}>
               <label style={{ fontSize: '0.75rem' }}>Hora</label>
-              <input className="input" type="datetime-local" value={d.performedAt} onChange={e => updateDefib(i, 'performedAt', e.target.value)} />
+              <input className="input" type="datetime-local" step="1" value={d.performedAt} onChange={e => updateDefib(i, 'performedAt', e.target.value)} />
             </div>
             <div className="input-group" style={{ margin: 0, minWidth: 80 }}>
               <label style={{ fontSize: '0.75rem' }}>Energía (J)</label>
@@ -698,7 +698,7 @@ function Step4Clinical({
             </div>
             <div className="input-group" style={{ margin: 0 }}>
               <label style={{ fontSize: '0.75rem' }}>Hora</label>
-              <input className="input" type="datetime-local" value={d.administeredAt} onChange={e => updateDrug(i, 'administeredAt', e.target.value)} />
+              <input className="input" type="datetime-local" step="1" value={d.administeredAt} onChange={e => updateDrug(i, 'administeredAt', e.target.value)} />
             </div>
             <button className="btn btn-sm btn-danger" type="button" onClick={() => removeDrug(i)} style={{ marginBottom: 2 }}>✕</button>
           </div>

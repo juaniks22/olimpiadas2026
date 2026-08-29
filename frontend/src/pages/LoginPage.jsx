@@ -24,8 +24,6 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        // El backend responde { error: { message, details } }.
-        // Hay que leer .error.message, no .error (que es un objeto → "[object Object]").
         const message =
           data?.error?.message || data?.message || 'Usuario o contraseña incorrectos';
         throw new Error(message);
@@ -48,10 +46,7 @@ export default function LoginPage() {
             <HeartPulseIcon size={24} color="white" />
           </div>
           <h2>Gestión de Emergencias</h2>
-          <p>Plataforma integral para auditoría y registro clínico Utstein.</p>
-          <div className="login-hero-footer">
-            E.E.S.T. N°2 • ONETP 2026
-          </div>
+          <p>Plataforma para registro clinico especializado.</p>
         </div>
 
         {/* Form Section */}
@@ -63,7 +58,7 @@ export default function LoginPage() {
 
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="input-group">
-              <label htmlFor="login-username">Usuario institucional</label>
+              <label htmlFor="login-username">Usuario</label>
               <input
                 id="login-username"
                 className="input"
@@ -96,7 +91,7 @@ export default function LoginPage() {
               className="btn btn-primary"
               disabled={loading}
             >
-              {loading ? 'Ingresando...' : 'Ingresar a Blue Code'}
+              {loading ? 'Ingresando...' : 'Ingresar'}
             </button>
           </form>
         </div>
