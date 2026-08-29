@@ -5,12 +5,10 @@ import ReportDetailModal from '../../components/ReportDetailModal';
 import { exportToPdf, exportToCsv } from '../../utils/reportExportUtils';
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
+  PieChart,
+  Pie,
+  Cell,
   Tooltip,
-  CartesianGrid,
   Legend,
 } from 'recharts';
 
@@ -46,6 +44,7 @@ export default function ReportsPage() {
   const [exportingCsv, setExportingCsv] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [selectedCallForDetail, setSelectedCallForDetail] = useState(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -196,24 +195,25 @@ export default function ReportsPage() {
     }
   };
 
-  // Datos para gráfico temporal Recharts
-  const chartData = useMemo(() => {
+  // Datos para gráfico de torta Recharts
+  const PIE_COLORS = ['#F43F5E', '#3B82F6', '#10B981'];
+  const pieData = useMemo(() => {
     if (!calls.length) return [];
 
-    // Agrupar llamados por fecha (YYYY-MM-DD)
-    const grouped = {};
+    let emergencia = 0;
+    let normal = 0;
+    let rce = 0;
     calls.forEach((c) => {
-      const dateKey = c.fecha ? c.fecha.slice(0, 10) : 'Sin fecha';
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = { date: dateKey, emergencia: 0, normal: 0, rce: 0 };
-      }
-      if (c.tipo === 'EMERGENCY') grouped[dateKey].emergencia += 1;
-      else grouped[dateKey].normal += 1;
-      if (c.rce === 'si') grouped[dateKey].rce += 1;
+      if (c.tipo === 'EMERGENCY') emergencia += 1;
+      else normal += 1;
+      if (c.rce === 'si') rce += 1;
     });
 
-    // Ordenar cronológicamente para el gráfico
-    return Object.values(grouped).sort((a, b) => (a.date > b.date ? 1 : -1));
+    return [
+      { name: 'Emergencia', value: emergencia },
+      { name: 'Normal', value: normal },
+      { name: 'RCE Logrado', value: rce },
+    ].filter((d) => d.value > 0);
   }, [calls]);
 
   // Paginación de llamados
@@ -226,65 +226,73 @@ export default function ReportsPage() {
   return (
     <>
       {/* 1. Header de Página con Acciones */}
-      <div className="page-header">
-        <div>
+      <div className="reports-page-header">
+        <div className="reports-page-header__title">
           <h2>Auditoría y Reportes Utstein</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+          <p className="reports-page-header__subtitle">
             Panel de supervisión clínica, tiempos de respuesta y análisis estadístico.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+        <div className="reports-page-header__actions">
           <button
             id="btn-seed-demo"
-            className="btn btn-secondary"
+            className="btn btn-sm btn-secondary"
             onClick={handleSeedDemo}
             disabled={loading || seeding || calls.length > 0}
-            title="Crear datos de demostración para ver estadísticas"
-            style={{ gap: '6px' }}
+            title="Crear datos de demostración"
           >
             <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <ellipse cx="12" cy="5" rx="9" ry="3" />
               <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
               <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
             </svg>
-            {seeding ? 'Creando...' : 'Rellenar Datos Demo'}
+            {seeding ? 'Creando...' : 'Demo'}
           </button>
 
           <button
             id="btn-export-pdf"
-            className="btn btn-primary"
+            className="btn btn-sm btn-primary"
             onClick={handleExportPdf}
             disabled={loading || exportingPdf || calls.length === 0}
             title="Exportar reporte clínico en formato PDF"
           >
-            <svg
-              className="icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
               <line x1="16" y1="13" x2="8" y2="13" />
               <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
             </svg>
-            {exportingPdf ? 'Generando PDF...' : 'Exportar PDF'}
+            {exportingPdf ? 'Generando...' : 'PDF'}
           </button>
 
           <button
             id="btn-export-csv"
-            className="btn btn-secondary"
+            className="btn btn-sm btn-secondary"
             onClick={handleExportCsv}
             disabled={loading || exportingCsv || calls.length === 0}
             title="Descargar datos en CSV para Excel"
           >
+            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {exportingCsv ? 'Generando...' : 'CSV'}
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Barra de Filtros Colapsable */}
+      <div className="card-flat report-filter-card" style={{ marginBottom: 'var(--space-xl)' }}>
+        <div className="filter-card-header">
+          <button
+            type="button"
+            className="filter-toggle-btn"
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
             <svg
-              className="icon"
+              className="filter-toggle-icon"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -292,129 +300,135 @@ export default function ReportsPage() {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
             </svg>
-            {exportingCsv ? 'Generando CSV...' : 'Exportar CSV'}
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Barra de Filtros Compacta (OLI-87, OLI-88) */}
-      <div className="card-flat report-filter-card" style={{ marginBottom: 'var(--space-xl)' }}>
-        <div className="filter-card-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Filtros de Búsqueda</h3>
+            <span>Filtros</span>
             {hasActiveFilters && (
-              <span className="badge badge-info" style={{ fontSize: '0.75rem' }}>
-                Filtros activos
+              <span className="badge badge-info" style={{ fontSize: '0.6875rem' }}>
+                Activos
               </span>
             )}
-          </div>
+            <svg
+              className={`filter-chevron ${filtersOpen ? 'filter-chevron--open' : ''}`}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
 
           {hasActiveFilters && (
             <button
               type="button"
               className="btn btn-sm btn-secondary"
               onClick={handleResetFilters}
-              style={{ fontSize: '0.8125rem' }}
+              style={{ fontSize: '0.75rem', padding: '6px 12px' }}
             >
-              Limpiar Filtros
+              Limpiar
             </button>
           )}
         </div>
 
-        {/* Fila 1: Fecha + Búsqueda + Área */}
-        <div className="filter-grid" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>
-          <div className="filter-item">
-            <label>Rango de Fechas</label>
-            <FlatpickrRangePicker
-              dateFrom={filters.dateFrom}
-              dateTo={filters.dateTo}
-              onChange={handleDateRangeChange}
-              placeholder="Todas las fechas..."
-              showPresets={true}
-            />
-          </div>
+        <div className={`filter-collapse ${filtersOpen ? 'filter-collapse--open' : ''}`}>
+          <div className="filter-collapse__inner">
+            {/* Fila 1: Fecha + Búsqueda + Área */}
+            <div className="filter-grid report-filter-grid">
+              <div className="filter-item filter-item--date">
+                <label>Rango de Fechas</label>
+                <FlatpickrRangePicker
+                  dateFrom={filters.dateFrom}
+                  dateTo={filters.dateTo}
+                  onChange={handleDateRangeChange}
+                  placeholder="Todas las fechas..."
+                  showPresets={true}
+                />
+              </div>
 
-          <div className="filter-item">
-            <label htmlFor="filter-search">Búsqueda</label>
-            <div className="search-input">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                id="filter-search"
-                type="text"
-                className="input"
-                placeholder="DNI, área, usuario..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-              />
+              <div className="filter-item">
+                <label htmlFor="filter-search">Búsqueda</label>
+                <div className="search-input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <input
+                    id="filter-search"
+                    type="text"
+                    className="input"
+                    placeholder="DNI, área, usuario..."
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="filter-item">
+                <label htmlFor="filter-area">Área</label>
+                <select
+                  id="filter-area"
+                  className="select"
+                  value={filters.areaId}
+                  onChange={(e) => handleFilterChange('areaId', e.target.value)}
+                >
+                  <option value="">Todas</option>
+                  {areas.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div className="filter-item">
-            <label htmlFor="filter-area">Área</label>
-            <select
-              id="filter-area"
-              className="select"
-              value={filters.areaId}
-              onChange={(e) => handleFilterChange('areaId', e.target.value)}
-            >
-              <option value="">Todas</option>
-              {areas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+            {/* Fila 2: Tipo + Origen + Orden */}
+            <div className="filter-grid report-filter-grid" style={{ marginTop: 'var(--space-md)' }}>
+              <div className="filter-item">
+                <label htmlFor="filter-type">Tipo</label>
+                <select
+                  id="filter-type"
+                  className="select"
+                  value={filters.type}
+                  onChange={(e) => handleFilterChange('type', e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="EMERGENCY">Emergencia</option>
+                  <option value="NORMAL">Normal</option>
+                </select>
+              </div>
 
-        {/* Fila 2: Tipo + Origen + Orden (compacta) */}
-        <div className="filter-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 'var(--space-md)' }}>
-          <div className="filter-item">
-            <label htmlFor="filter-type">Tipo</label>
-            <select
-              id="filter-type"
-              className="select"
-              value={filters.type}
-              onChange={(e) => handleFilterChange('type', e.target.value)}
-            >
-              <option value="">Todos</option>
-              <option value="EMERGENCY">Emergencia</option>
-              <option value="NORMAL">Normal</option>
-            </select>
-          </div>
+              <div className="filter-item">
+                <label htmlFor="filter-origin">Origen</label>
+                <select
+                  id="filter-origin"
+                  className="select"
+                  value={filters.origin}
+                  onChange={(e) => handleFilterChange('origin', e.target.value)}
+                >
+                  <option value="">Todos</option>
+                  <option value="INTRA_HOSPITAL">Intrahospitalario</option>
+                  <option value="EXTRA_HOSPITAL">Extrahospitalario</option>
+                </select>
+              </div>
 
-          <div className="filter-item">
-            <label htmlFor="filter-origin">Origen</label>
-            <select
-              id="filter-origin"
-              className="select"
-              value={filters.origin}
-              onChange={(e) => handleFilterChange('origin', e.target.value)}
-            >
-              <option value="">Todos</option>
-              <option value="INTRA_HOSPITAL">Intrahospitalario</option>
-              <option value="EXTRA_HOSPITAL">Extrahospitalario</option>
-            </select>
-          </div>
-
-          <div className="filter-item">
-            <label htmlFor="filter-order">Orden</label>
-            <select
-              id="filter-order"
-              className="select"
-              value={filters.sortOrder}
-              onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-            >
-              <option value="desc">Más recientes</option>
-              <option value="asc">Más antiguos</option>
-            </select>
+              <div className="filter-item">
+                <label htmlFor="filter-order">Orden</label>
+                <select
+                  id="filter-order"
+                  className="select"
+                  value={filters.sortOrder}
+                  onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
+                >
+                  <option value="desc">Más recientes</option>
+                  <option value="asc">Más antiguos</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -496,50 +510,57 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* 4. Gráfico Recharts de Evolución Temporal */}
-      {chartData.length > 0 && (
-        <div className="card-flat" style={{ marginBottom: 'var(--space-xl)' }}>
-          <div className="attention-header" style={{ marginBottom: 'var(--space-md)' }}>
-            <div>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Evolución de Llamados por Fecha</h3>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
-                Distribución de eventos de emergencia y normales en el período seleccionado.
-              </p>
-            </div>
+      {/* 4. Gráfico de Torta Recharts */}
+      {pieData.length > 0 && (
+        <div className="card-flat report-chart-card" style={{ marginBottom: 'var(--space-xl)' }}>
+          <div style={{ marginBottom: 'var(--space-md)' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Distribución de Llamados</h3>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
+              Proporción de eventos de emergencia, normales y RCE en el período seleccionado.
+            </p>
           </div>
 
-          <div style={{ width: '100%', height: 260 }}>
+          <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  stroke="var(--text-tertiary)"
-                  fontSize={12}
-                  tickLine={false}
-                />
-                <YAxis
-                  stroke="var(--text-tertiary)"
-                  fontSize={12}
-                  tickLine={false}
-                  allowDecimals={false}
-                />
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={4}
+                  dataKey="value"
+                  stroke="none"
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
+                  labelLine={{ stroke: 'var(--text-tertiary)', strokeWidth: 1 }}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={PIE_COLORS[index % PIE_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
                 <Tooltip
                   contentStyle={{
                     background: 'var(--bg-card)',
                     borderColor: 'var(--border-card)',
                     borderRadius: '12px',
                     color: 'var(--text-primary)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    fontSize: '0.8125rem',
                   }}
-                  itemStyle={{ fontSize: '0.8125rem' }}
-                  labelStyle={{ fontWeight: 600, marginBottom: 4 }}
+                  formatter={(value, name) => [`${value} llamados`, name]}
                 />
-                <Legend wrapperStyle={{ fontSize: '0.8125rem', paddingTop: '8px' }} />
-                <Bar dataKey="emergencia" name="Emergencia" fill="#F43F5E" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="normal" name="Normal" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="rce" name="RCE Logrado" fill="#10B981" radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <Legend
+                  wrapperStyle={{ fontSize: '0.8125rem', paddingTop: '12px' }}
+                  iconType="circle"
+                  iconSize={8}
+                />
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
