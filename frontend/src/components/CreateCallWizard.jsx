@@ -418,6 +418,7 @@ export default function CreateCallWizard({ onClose, onCreated }) {
               defibs={defibs} setDefibs={setDefibs}
               drugs={drugs} setDrugs={setDrugs}
               cartItems={cartItems} areaCart={areaCart}
+              callReceivedAt={callReceivedAt}
             />
           )}
           {step === 5 && (
@@ -620,7 +621,7 @@ function Step4Clinical({
   airway, setAirway, venous, setVenous,
   postStatus, setPostStatus, suspensionCause, setSuspensionCause,
   defibs, setDefibs, drugs, setDrugs,
-  cartItems, areaCart,
+  cartItems, areaCart, callReceivedAt,
 }) {
   const cartAvailable = areaCart && areaCart.status === 'IN_SERVICE' && cartItems.length > 0;
 
