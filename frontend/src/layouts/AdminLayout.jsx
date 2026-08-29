@@ -77,7 +77,7 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        <div className="slide-up">
+        <div>
           <Outlet />
         </div>
       </main>

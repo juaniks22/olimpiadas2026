@@ -76,7 +76,7 @@ export default function GenericLayout() {
           </div>
         </div>
 
-        <div className="slide-up">
+        <div>
           <Outlet />
         </div>
       </main>
