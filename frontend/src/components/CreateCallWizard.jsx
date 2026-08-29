@@ -191,45 +191,63 @@ export default function CreateCallWizard({ onClose, onCreated }) {
 
   useEffect(() => { loadCartForArea(areaId); }, [areaId, loadCartForArea]);
 
-  const canAdvance = () => {
-    switch (step) {
-      case 1: return !!areaId;
+  const validateStep = (s) => {
+    switch (s) {
+      case 1:
+        if (!areaId) return 'Seleccioná un área para continuar.';
+        return null;
       case 2: {
-        if (patientIdType === 'DNI' && !patientDni.trim()) return false;
-        if (patientIdType === 'TEMPORARY_ID' && !patientTempId.trim()) return false;
-        return true;
+        if (patientIdType === 'DNI' && !patientDni.trim()) return 'Ingresá el DNI del paciente.';
+        if (patientIdType === 'TEMPORARY_ID' && !patientTempId.trim()) return 'Ingresá el ID temporario.';
+        return null;
       }
       case 3: {
-        // Validación cronológica (que ningún tiempo sea anterior al anterior)
-        const times = [callReceivedAt, teamArrivalAt, cprStartedAt, roscAt, eventEndedAt]
-          .filter(Boolean)
-          .map(t => new Date(t).getTime());
+        const times = [
+          { label: 'Recepción', val: callReceivedAt },
+          { label: 'Llegada', val: teamArrivalAt },
+          { label: 'Inicio RCP', val: cprStartedAt },
+          { label: 'RCE', val: roscAt },
+          { label: 'Fin de Evento', val: eventEndedAt }
+        ].filter(t => t.val);
+        
         for (let i = 0; i < times.length - 1; i++) {
-          if (times[i] > times[i+1]) return false;
+          if (new Date(times[i].val) > new Date(times[i+1].val)) {
+            return `El tiempo de "${times[i+1].label}" no puede ser anterior a "${times[i].label}".`;
+          }
         }
-        return true;
+        return null;
       }
       case 4: {
-        // Validar que no haya campos vacíos en desfibrilaciones ni tiempos anteriores a la recepción
-        for (const d of defibs) {
-          if (!d.performedAt || !d.energyDelivered || !d.rhythm || !d.sequenceNumber) return false;
-          if (callReceivedAt && new Date(d.performedAt) < new Date(callReceivedAt)) return false;
+        for (let i = 0; i < defibs.length; i++) {
+          const d = defibs[i];
+          if (!d.performedAt || !d.energyDelivered || !d.rhythm || !d.sequenceNumber) {
+            return `Completá todos los campos de la desfibrilación N° ${d.sequenceNumber || i+1}.`;
+          }
+          if (callReceivedAt && new Date(d.performedAt) < new Date(callReceivedAt)) {
+            return `La hora de la desfibrilación N° ${d.sequenceNumber || i+1} no puede ser anterior al inicio del evento.`;
+          }
         }
-        // Validar que no haya campos vacíos en drogas
-        for (const d of drugs) {
-          if (!d.crashCartItemId || !d.dose || !d.unit || !d.route || !d.administeredAt) return false;
-          if (callReceivedAt && new Date(d.administeredAt) < new Date(callReceivedAt)) return false;
+        for (let i = 0; i < drugs.length; i++) {
+          const d = drugs[i];
+          if (!d.crashCartItemId || !d.dose || !d.unit || !d.route || !d.administeredAt) {
+            return `Completá todos los campos de la droga administrada (${d.drugName || 'Fila ' + (i+1)}).`;
+          }
+          if (callReceivedAt && new Date(d.administeredAt) < new Date(callReceivedAt)) {
+            return `La hora de administración de ${d.drugName} no puede ser anterior al inicio del evento.`;
+          }
         }
-        return true;
+        return null;
       }
       case 5: {
-        // Validar que no haya asignaciones de equipo a medias
-        for (const a of teamAssignments) {
-          if (!a.positionId || !a.staffMemberId) return false;
+        for (let i = 0; i < teamAssignments.length; i++) {
+          const a = teamAssignments[i];
+          if (!a.positionId || !a.staffMemberId) {
+            return `Completá la posición y el personal para la asignación de la fila ${i+1}.`;
+          }
         }
-        return true;
+        return null;
       }
-      default: return true;
+      default: return null;
     }
   };
 
@@ -322,7 +340,15 @@ export default function CreateCallWizard({ onClose, onCreated }) {
   };
 
   // ─── Navigation ───────────────────────────────────────────────────────────
-  const next = () => { setErr(''); setStep(s => Math.min(TOTAL_STEPS, s + 1)); };
+  const handleNext = () => {
+    const error = validateStep(step);
+    if (error) {
+      setErr(error);
+    } else {
+      setErr('');
+      setStep(s => Math.min(TOTAL_STEPS, s + 1));
+    }
+  };
   const prev = () => { setErr(''); setStep(s => Math.max(1, s - 1)); };
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -421,15 +447,14 @@ export default function CreateCallWizard({ onClose, onCreated }) {
           <div style={{ flex: 1 }} />
           {step < TOTAL_STEPS ? (
             <button
-              type="button" className="btn btn-primary" onClick={next}
-              disabled={!canAdvance()}
+              type="button" className="btn btn-primary" onClick={handleNext}
             >
               Siguiente →
             </button>
           ) : (
             <button
               type="button" className="btn btn-primary" onClick={handleSubmit}
-              disabled={submitting || !areaId}
+              disabled={submitting}
             >
               {submitting ? 'Registrando...' : 'Registrar Evento'}
             </button>
@@ -564,10 +589,10 @@ function Step3Chronology({
 }) {
   const timeFields = [
     { id: 'wiz-received', label: 'Recepción / Activación del Código', value: callReceivedAt, set: setCallReceivedAt },
-    { id: 'wiz-arrival', label: 'Llegada del Equipo', value: teamArrivalAt, set: setTeamArrivalAt },
-    { id: 'wiz-cpr', label: 'Inicio de RCP', value: cprStartedAt, set: setCprStartedAt },
-    { id: 'wiz-rosc', label: 'Retorno de Circulación Espontánea (RCE)', value: roscAt, set: setRoscAt },
-    { id: 'wiz-end', label: 'Fin / Suspensión del Evento', value: eventEndedAt, set: setEventEndedAt },
+    { id: 'wiz-arrival', label: 'Llegada del Equipo', value: teamArrivalAt, set: setTeamArrivalAt, min: callReceivedAt },
+    { id: 'wiz-cpr', label: 'Inicio de RCP', value: cprStartedAt, set: setCprStartedAt, min: teamArrivalAt || callReceivedAt },
+    { id: 'wiz-rosc', label: 'Retorno de Circulación Espontánea (RCE)', value: roscAt, set: setRoscAt, min: cprStartedAt || teamArrivalAt || callReceivedAt },
+    { id: 'wiz-end', label: 'Fin / Suspensión del Evento', value: eventEndedAt, set: setEventEndedAt, min: callReceivedAt },
   ];
 
   return (
@@ -580,7 +605,7 @@ function Step3Chronology({
         {timeFields.map(f => (
           <div className="input-group" key={f.id}>
             <label htmlFor={f.id}>{f.label}</label>
-            <input id={f.id} className="input" type="datetime-local" step="1" value={f.value} onChange={e => f.set(e.target.value)} />
+            <input id={f.id} className="input" type="datetime-local" step="1" value={f.value} min={f.min || undefined} onChange={e => f.set(e.target.value)} />
           </div>
         ))}
       </div>
@@ -665,13 +690,13 @@ function Step4Clinical({
         )}
         {defibs.map((d, i) => (
           <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 8, padding: '8px 12px', background: 'var(--bg-input)', borderRadius: 'var(--radius-sm)' }}>
-            <div className="input-group" style={{ margin: 0, minWidth: 50 }}>
+            <div className="input-group" style={{ margin: 0, minWidth: 30, alignItems: 'center', paddingBottom: 10 }}>
               <label style={{ fontSize: '0.75rem' }}>N°</label>
-              <input className="input" type="number" style={{ width: 50 }} value={d.sequenceNumber} onChange={e => updateDefib(i, 'sequenceNumber', e.target.value)} />
+              <div style={{ fontWeight: 600 }}>{d.sequenceNumber}</div>
             </div>
             <div className="input-group" style={{ margin: 0 }}>
               <label style={{ fontSize: '0.75rem' }}>Hora</label>
-              <input className="input" type="datetime-local" step="1" value={d.performedAt} onChange={e => updateDefib(i, 'performedAt', e.target.value)} />
+              <input className="input" type="datetime-local" step="1" min={callReceivedAt || undefined} value={d.performedAt} onChange={e => updateDefib(i, 'performedAt', e.target.value)} />
             </div>
             <div className="input-group" style={{ margin: 0, minWidth: 80 }}>
               <label style={{ fontSize: '0.75rem' }}>Energía (J)</label>
@@ -712,9 +737,9 @@ function Step4Clinical({
               <label style={{ fontSize: '0.75rem' }}>Dosis</label>
               <input className="input" type="number" style={{ width: 70 }} min={0} step="0.1" value={d.dose} onChange={e => updateDrug(i, 'dose', e.target.value)} />
             </div>
-            <div className="input-group" style={{ margin: 0, minWidth: 70 }}>
+            <div className="input-group" style={{ margin: 0, minWidth: 100 }}>
               <label style={{ fontSize: '0.75rem' }}>Unidad</label>
-              <input className="input" type="text" style={{ width: 70 }} value={d.unit} onChange={e => updateDrug(i, 'unit', e.target.value)} />
+              <input className="input" type="text" style={{ width: 100, backgroundColor: 'var(--bg-body)' }} value={d.unit} readOnly placeholder="Autocompletado" />
             </div>
             <div className="input-group" style={{ margin: 0, minWidth: 80 }}>
               <label style={{ fontSize: '0.75rem' }}>Vía</label>
@@ -724,7 +749,7 @@ function Step4Clinical({
             </div>
             <div className="input-group" style={{ margin: 0 }}>
               <label style={{ fontSize: '0.75rem' }}>Hora</label>
-              <input className="input" type="datetime-local" step="1" value={d.administeredAt} onChange={e => updateDrug(i, 'administeredAt', e.target.value)} />
+              <input className="input" type="datetime-local" step="1" min={callReceivedAt || undefined} value={d.administeredAt} onChange={e => updateDrug(i, 'administeredAt', e.target.value)} />
             </div>
             <button className="btn btn-sm btn-danger" type="button" onClick={() => removeDrug(i)} style={{ marginBottom: 2 }}>✕</button>
           </div>
