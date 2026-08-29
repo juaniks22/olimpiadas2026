@@ -1,10 +1,13 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../App';
+import ReportDetailModal from '../../components/ReportDetailModal';
+import { mapCallToReportFormat } from '../../utils/callMappers';
 
 export default function GenericHistory() {
   const { token, API_URL } = useContext(AuthContext);
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCall, setSelectedCall] = useState(null);
 
   useEffect(() => {
     const fetchCalls = async () => {
@@ -28,6 +31,10 @@ export default function GenericHistory() {
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleViewReport = (call) => {
+    setSelectedCall(mapCallToReportFormat(call));
   };
 
   return (
@@ -67,7 +74,11 @@ export default function GenericHistory() {
                     <td>{call.area?.name || '—'}</td>
                     <td style={{ color: 'var(--text-secondary)' }}>{formatDate(call.createdAt)}</td>
                     <td>
-                      <button className="btn btn-sm btn-secondary" style={{ color: 'var(--color-primary)' }}>
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        style={{ color: 'var(--color-primary)' }}
+                        onClick={() => handleViewReport(call)}
+                      >
                         Ver Ficha
                       </button>
                     </td>
@@ -78,6 +89,14 @@ export default function GenericHistory() {
           </table>
         </div>
       </div>
+
+      {/* Modal de detalle Utstein */}
+      {selectedCall && (
+        <ReportDetailModal
+          call={selectedCall}
+          onClose={() => setSelectedCall(null)}
+        />
+      )}
     </>
   );
 }

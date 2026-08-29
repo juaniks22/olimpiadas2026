@@ -1,6 +1,9 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../App';
+import CreateCallWizard from '../../components/CreateCallWizard';
+import ReportDetailModal from '../../components/ReportDetailModal';
+import { mapCallToReportFormat } from '../../utils/callMappers';
 
 export default function GenericDashboard() {
   const { token, API_URL, user } = useContext(AuthContext);
@@ -9,10 +12,8 @@ export default function GenericDashboard() {
   const [recentCalls, setRecentCalls] = useState([]);
   const [cartStatus, setCartStatus] = useState({ name: '—', status: 'IN_SERVICE' });
   const [loading, setLoading] = useState(true);
-  const [areas, setAreas] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newCall, setNewCall] = useState({ areaId: '', type: 'EMERGENCY', origin: 'INTRA_HOSPITAL' });
-  const [submitting, setSubmitting] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [selectedCall, setSelectedCall] = useState(null);
 
   const fetchCalls = async () => {
     try {
@@ -32,25 +33,10 @@ export default function GenericDashboard() {
     }
   };
 
-  const fetchAreas = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/areas`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAreas(data);
-        if (data.length > 0) setNewCall(prev => ({ ...prev, areaId: data[0].id }));
-      }
-    } catch (err) {
-      console.error('Error fetching areas:', err);
-    }
-  };
-
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await Promise.all([fetchCalls(), fetchAreas()]);
+      await fetchCalls();
       setLoading(false);
     };
     init();
@@ -83,40 +69,8 @@ export default function GenericDashboard() {
     return 'Sin datos';
   };
 
-  const handleCreateCall = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const payload = {
-        areaId: newCall.areaId,
-        type: newCall.type,
-        origin: newCall.origin,
-        eventForm: {
-          patientIdentificationType: 'NN' // Default for a new quick call
-        }
-      };
-
-      const res = await fetch(`${API_URL}/api/calls`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        setIsModalOpen(false);
-        await fetchCalls();
-      } else {
-        alert('Error al crear el llamado');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Error de conexión');
-    } finally {
-      setSubmitting(false);
-    }
+  const handleViewReport = (call) => {
+    setSelectedCall(mapCallToReportFormat(call));
   };
 
   return (
@@ -128,7 +82,7 @@ export default function GenericDashboard() {
           <div className="new-call-icon">+</div>
           <h3>Nuevo Llamado</h3>
           <p>Inicia un nuevo registro de Código Azul para tu área asignada.</p>
-          <button className="btn" id="btn-new-call" onClick={() => setIsModalOpen(true)}>
+          <button className="btn" id="btn-new-call" onClick={() => setIsWizardOpen(true)}>
             Registrar Evento
           </button>
         </div>
@@ -179,7 +133,11 @@ export default function GenericDashboard() {
                     <td>{getPatientLabel(call)}</td>
                     <td style={{ color: 'var(--color-primary)' }}>{formatDate(call.createdAt)}</td>
                     <td>
-                      <button className="btn btn-sm btn-secondary" style={{ color: 'var(--color-primary)' }}>
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        style={{ color: 'var(--color-primary)' }}
+                        onClick={() => handleViewReport(call)}
+                      >
                         Ver Ficha
                       </button>
                     </td>
@@ -191,66 +149,20 @@ export default function GenericDashboard() {
         </div>
       </div>
 
-      {/* New Call Modal */}
-      {isModalOpen && (
-        <div className="modal-overlay" onClick={() => !submitting && setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Registrar Nuevo Evento</h3>
-              <button className="btn-close" onClick={() => !submitting && setIsModalOpen(false)}>×</button>
-            </div>
-            
-            <form onSubmit={handleCreateCall}>
-              <div style={{ marginBottom: 'var(--space-md)' }}>
-                <label className="input-group label">Área del Evento</label>
-                <select 
-                  className="input" 
-                  value={newCall.areaId}
-                  onChange={(e) => setNewCall({...newCall, areaId: e.target.value})}
-                  required
-                >
-                  <option value="" disabled>Seleccione un área...</option>
-                  {areas.map(area => (
-                    <option key={area.id} value={area.id}>{area.name}</option>
-                  ))}
-                </select>
-              </div>
+      {/* Wizard de creación multi-paso */}
+      {isWizardOpen && (
+        <CreateCallWizard
+          onClose={() => setIsWizardOpen(false)}
+          onCreated={() => { setIsWizardOpen(false); fetchCalls(); }}
+        />
+      )}
 
-              <div style={{ marginBottom: 'var(--space-md)' }}>
-                <label className="input-group label">Gravedad</label>
-                <select 
-                  className="input" 
-                  value={newCall.type}
-                  onChange={(e) => setNewCall({...newCall, type: e.target.value})}
-                >
-                  <option value="EMERGENCY">Emergencia (Código Azul)</option>
-                  <option value="NORMAL">Normal</option>
-                </select>
-              </div>
-
-              <div style={{ marginBottom: 'var(--space-xl)' }}>
-                <label className="input-group label">Origen</label>
-                <select 
-                  className="input" 
-                  value={newCall.origin}
-                  onChange={(e) => setNewCall({...newCall, origin: e.target.value})}
-                >
-                  <option value="INTRA_HOSPITAL">Intrahospitalario</option>
-                  <option value="EXTRA_HOSPITAL">Extrahospitalario</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)} disabled={submitting}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting || !newCall.areaId}>
-                  {submitting ? 'Creando...' : 'Crear Registro'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* Modal de detalle Utstein */}
+      {selectedCall && (
+        <ReportDetailModal
+          call={selectedCall}
+          onClose={() => setSelectedCall(null)}
+        />
       )}
     </>
   );
