@@ -8,6 +8,8 @@ import AreasPage from './pages/admin/AreasPage';
 import UsersPage from './pages/admin/UsersPage';
 import CrashCartsPage from './pages/admin/CrashCartsPage';
 import ReportsPage from './pages/admin/ReportsPage';
+import StaffPage from './pages/admin/StaffPage';
+import ResponseTeamPositionsPage from './pages/admin/ResponseTeamPositionsPage';
 import GenericDashboard from './pages/generic/GenericDashboard';
 import GenericHistory from './pages/generic/GenericHistory';
 
@@ -86,6 +88,8 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="areas" element={<AreasPage />} />
             <Route path="users" element={<UsersPage />} />
+            <Route path="staff" element={<StaffPage />} />
+            <Route path="response-team-positions" element={<ResponseTeamPositionsPage />} />
             <Route path="crash-carts" element={<CrashCartsPage />} />
             <Route path="reports" element={<ReportsPage />} />
           </Route>

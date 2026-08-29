@@ -8,6 +8,8 @@ const navItems = [
   { to: '/admin/crash-carts', label: 'Carros de Paro', icon: '' },
   { to: '/admin/areas', label: 'Áreas', icon: '' },
   { to: '/admin/users', label: 'Cuentas', icon: '' },
+  { to: '/admin/staff', label: 'Personal Certificado', icon: '' },
+  { to: '/admin/response-team-positions', label: 'Equipos de Respuesta', icon: '' },
   { to: '/admin/reports', label: 'Reportes', icon: '' },
 ];
 
