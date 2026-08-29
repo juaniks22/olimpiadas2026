@@ -2,6 +2,8 @@
 // pero la API sí necesita dotenv acá.
 require("dotenv/config");
 
+// Helper para validar que una variable de entorno esté definida.
+// Si no lo está, aborta el proceso inmediatamente (fail-fast) para evitar errores crípticos en tiempo de ejecución.
 function required(name) {
   const value = process.env[name];
   if (!value) {

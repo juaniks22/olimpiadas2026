@@ -14,6 +14,8 @@ const BCRYPT_ROUNDS = 10;
 const MIN_LEN = 8;
 const MAX_LEN = 12;
 
+// Validar que la contraseña cumpla con las políticas de seguridad: 
+// longitud mínima y máxima, y caracteres requeridos (mayúsculas, minúsculas, números y símbolos).
 function assertPolicy(password) {
   const problems = [];
   if (typeof password !== "string" || password.length < MIN_LEN || password.length > MAX_LEN) {
@@ -28,11 +30,13 @@ function assertPolicy(password) {
   }
 }
 
+// Helper para seleccionar aleatoriamente un carácter de un string o arreglo de caracteres.
 function pick(chars) {
   return chars[randomInt(chars.length)];
 }
 
-// Genera una contraseña de 12 caracteres que cumple la política sí o sí.
+// Genera una contraseña segura y aleatoria de 12 caracteres.
+// Garantiza que contenga al menos un carácter de cada grupo obligatorio, usando Fisher-Yates para mezclar sus posiciones.
 function generate() {
   const out = [pick(LOWER), pick(UPPER), pick(DIGITS), pick(SYMBOLS)];
   while (out.length < MAX_LEN) out.push(pick(ALL));
@@ -44,10 +48,12 @@ function generate() {
   return out.join("");
 }
 
+// Hashea la contraseña en texto plano utilizando bcrypt y la cantidad de rondas definida.
 function hash(plainPassword) {
   return bcrypt.hash(plainPassword, BCRYPT_ROUNDS);
 }
 
+// Compara una contraseña en texto plano contra un hash de bcrypt para verificar si coinciden.
 function compare(plainPassword, passwordHash) {
   return bcrypt.compare(plainPassword, passwordHash);
 }

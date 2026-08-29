@@ -20,6 +20,7 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  // Dependencias externas (Node.js/NPM) utilizadas en el backend para la base de datos, encriptación, seguridad y servidor HTTP.
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "bcrypt": "^6.0.0",

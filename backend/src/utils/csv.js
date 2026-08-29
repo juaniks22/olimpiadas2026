@@ -1,6 +1,8 @@
-// Exportación CSV sin librería externa (restricción del stack).
-const BOM = "﻿";
+// Exportación CSV nativa sin dependencias externas (cumple con restricción del stack).
+const BOM = "\uFEFF";
 
+// Escapa el valor de una celda para CSV. 
+// Convierte nulos en strings vacíos, fechas a ISO, y encierra textos con comillas o saltos de línea entre comillas dobles.
 function escapeCell(value) {
   if (value === null || value === undefined) return "";
   const text = value instanceof Date ? value.toISOString() : String(value);
@@ -8,7 +10,8 @@ function escapeCell(value) {
   return text;
 }
 
-// rows: array de objetos planos con las mismas claves. La primera fila define los encabezados.
+// Genera un string en formato CSV a partir de un arreglo de objetos planos.
+// Utiliza las claves del primer objeto como encabezados. Agrega el BOM UTF-8 para compatibilidad con Excel.
 function toCsv(rows) {
   if (!rows.length) return "";
   const headers = Object.keys(rows[0]);

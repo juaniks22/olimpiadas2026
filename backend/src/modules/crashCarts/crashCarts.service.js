@@ -137,6 +137,7 @@ async function getCart(id) {
 }
 
 // Agrega los 28 medicamentos estándar a un carro.
+// Genera de forma asíncrona la lista estándar de 28 medicamentos y los asocia a un carro recién creado.
 async function addDefaultItems(crashCartId) {
   const position = await repo.positions.upsertByName(DEFAULT_MEDICATION_POSITION);
   await repo.items.createMany(
@@ -186,6 +187,8 @@ async function loadDefaultComposition(id) {
   return repo.carts.findDetail(id);
 }
 
+// Actualiza datos básicos del carro (nombre, área asignada).
+// Si se cambia el área, verifica que la nueva área no tenga ya un carro asignado.
 async function updateCart(id, body) {
   if (!(await repo.carts.findById(id))) throw new AppError(404, "Carro no encontrado");
   const data = {};
@@ -206,6 +209,8 @@ async function updateCart(id, body) {
   return repo.carts.update(id, data);
 }
 
+// Reactiva un carro que estaba INHABILITADO tras un consumo (solo el Admin puede hacer esto).
+// Cambia su estado nuevamente a IN_SERVICE y registra quién lo reactivó.
 async function reactivate(id, userId) {
   const cart = await repo.carts.findById(id);
   if (!cart) throw new AppError(404, "Carro no encontrado");
@@ -213,11 +218,14 @@ async function reactivate(id, userId) {
   return repo.carts.reactivate(id, userId);
 }
 
+// Lista todos los consumos (drogas administradas) extraídos históricamente de este carro específico.
 async function listConsumptions(id) {
   if (!(await repo.carts.findById(id))) throw new AppError(404, "Carro no encontrado");
   return repo.carts.consumptions(id);
 }
 
+// Elimina un carro de paro lógicamente solo si no tiene consumos registrados
+// ni ha sido referenciado en formularios de eventos previos.
 async function deleteCart(id) {
   const cart = await repo.carts.findById(id);
   if (!cart) throw new AppError(404, "Carro no encontrado");

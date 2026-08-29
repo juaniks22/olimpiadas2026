@@ -4,10 +4,13 @@ const token = require("../../utils/token");
 const { requireFields } = require("../../utils/validate");
 const usersRepository = require("../users/users.repository");
 
+// Mapeador auxiliar: toma el objeto de base de datos y retorna solo lo que es seguro enviar al frontend.
 function toPublic(user) {
   return { id: user.id, username: user.username, role: user.role, isActive: user.isActive };
 }
 
+// Lógica principal de inicio de sesión.
+// Valida credenciales, comprueba estado activo y compara hashes. Si es válido, emite un token JWT.
 async function login(body) {
   requireFields(body, ["username", "password"]);
   const user = await usersRepository.findByUsername(body.username);
@@ -20,12 +23,15 @@ async function login(body) {
   return { token: token.sign(user), user: toPublic(user) };
 }
 
+// Retorna los datos públicos del usuario autenticado actual, basándose en el ID extraído del token JWT.
 async function me(userId) {
   const user = await usersRepository.findByIdPublic(userId);
   if (!user) throw new AppError(404, "Cuenta no encontrada");
   return user;
 }
 
+// Permite a un usuario autenticado cambiar su propia contraseña.
+// Exige la contraseña actual para seguridad, y valida que la nueva cumpla la política de seguridad estricta.
 async function changePassword(userId, body) {
   requireFields(body, ["currentPassword", "newPassword"]);
   const user = await usersRepository.findById(userId);

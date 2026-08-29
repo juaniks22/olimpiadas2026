@@ -5,6 +5,7 @@
 const MAX_LINES = 52;
 const LEADING = 14;
 
+// Escapa caracteres especiales (backslash, paréntesis) que interfieren con la sintaxis nativa de un archivo PDF.
 function pdfEscape(text) {
   return String(text)
     .replace(/\\/g, "\\\\")
@@ -12,6 +13,8 @@ function pdfEscape(text) {
     .replace(/\)/g, "\\)");
 }
 
+// Construye un documento PDF básico en crudo (formato PDF-1.4).
+// Acepta un título y un arreglo de líneas de texto, recortándolas si exceden la capacidad de la página.
 function buildSimplePdf(title, lines) {
   const all = [title, ""].concat(lines);
   let body = all;

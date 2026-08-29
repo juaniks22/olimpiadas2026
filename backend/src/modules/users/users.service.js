@@ -6,6 +6,8 @@ const password = require("../../utils/password");
 const { requireFields, parseBool } = require("../../utils/validate");
 const repo = require("./users.repository");
 
+// Helper para resolver la contraseña durante la creación o reseteo.
+// Si no se provee texto plano pero se solicitó generación automática, la crea y retorna.
 function resolvePassword(body) {
   let plain = body.password;
   const generated = !plain && body.generatePassword === true;
@@ -17,6 +19,7 @@ function resolvePassword(body) {
   return { plain, generated };
 }
 
+// Retorna la lista de usuarios. Permite filtrar opcionalmente por estado activo/inactivo (isActive).
 async function list(query) {
   const where = {};
   const isActive = parseBool(query.isActive);
@@ -24,12 +27,15 @@ async function list(query) {
   return repo.findMany(where);
 }
 
+// Obtiene los datos públicos de un usuario específico por su ID.
 async function getById(id) {
   const user = await repo.findByIdPublic(id);
   if (!user) throw new AppError(404, "Cuenta no encontrada");
   return user;
 }
 
+// Crea una nueva cuenta de usuario (siempre con rol GENERIC).
+// Valida colisiones de nombre de usuario y hashea la contraseña antes de guardar.
 async function create(body) {
   requireFields(body, ["username"]);
   if (await repo.findByUsername(body.username)) {
@@ -44,6 +50,7 @@ async function create(body) {
   return generated ? { ...user, generatedPassword: plain } : user;
 }
 
+// Actualiza parcialmente los datos básicos de la cuenta (ej. username), validando duplicados.
 async function update(id, body) {
   await getById(id);
   const data = {};
@@ -56,6 +63,8 @@ async function update(id, body) {
   return repo.update(id, data);
 }
 
+// Cambia el estado de activación de una cuenta (alta/baja lógica).
+// Evita bloquear la cuenta Administradora principal.
 async function setActive(id, isActive) {
   const user = await repo.findById(id);
   if (!user) throw new AppError(404, "Cuenta no encontrada");
@@ -63,6 +72,7 @@ async function setActive(id, isActive) {
   return repo.update(id, { isActive });
 }
 
+// Permite al Administrador forzar el reseteo de la contraseña de un usuario GENERIC.
 async function resetPassword(id, body) {
   const user = await repo.findById(id);
   if (!user) throw new AppError(404, "Cuenta no encontrada");
@@ -71,6 +81,7 @@ async function resetPassword(id, body) {
   return generated ? { generatedPassword: plain } : { ok: true };
 }
 
+// Expone el generador de contraseñas de las utilidades (usado por el cliente para sugerencias).
 function suggestPassword() {
   return { password: password.generate() };
 }
