@@ -97,23 +97,16 @@ module.exports = {
 
       if (payload.crashCartConsumptions.length) {
         const crashCartId = ef.crashCartId;
-        for (const cons of payload.crashCartConsumptions) {
-          await tx.crashCartConsumption.create({
-            data: {
-              callId: call.id,
-              crashCartId,
-              crashCartItemId: cons.crashCartItemId,
-              quantity: cons.quantity,
-            },
-          });
-          await tx.crashCartItemStock.update({
-            where: {
-              crashCartId_crashCartItemId: { crashCartId, crashCartItemId: cons.crashCartItemId },
-            },
-            data: { intactUnitsRemaining: { decrement: cons.quantity } },
-          });
-        }
-        // Regla de negocio v2.3: cualquier consumo deja el CARRO COMPLETO fuera de servicio.
+        // No hay stock en vivo: solo se registra el consumo (historial de auditoría).
+        await tx.crashCartConsumption.createMany({
+          data: payload.crashCartConsumptions.map((cons) => ({
+            callId: call.id,
+            crashCartId,
+            crashCartItemId: cons.crashCartItemId,
+            quantity: cons.quantity,
+          })),
+        });
+        // Regla de negocio: cualquier consumo deja el CARRO COMPLETO fuera de servicio.
         await tx.crashCart.update({ where: { id: crashCartId }, data: { status: "OUT_OF_SERVICE" } });
       }
 

@@ -9,8 +9,12 @@
     "dev": "node --watch src/server.js",
     "build": "prisma generate",
     "seed:admin": "node scripts/seedAdmin.js",
+    "seed:meds": "node prisma/seed.js",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "keywords": [],
   "author": "",

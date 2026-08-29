@@ -14,5 +14,7 @@ router.get("/:id", controller.getById);
 router.post("/", authorize("ADMIN"), controller.create);
 router.patch("/:id", authorize("ADMIN"), controller.update);
 router.post("/:id/deactivate", authorize("ADMIN"), controller.deactivate);
+// Borrado real: 409 si el área tiene Calls o CrashCarts asociados.
+router.delete("/:id", authorize("ADMIN"), controller.remove);
 
 module.exports = router;

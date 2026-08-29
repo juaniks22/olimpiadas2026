@@ -187,12 +187,16 @@ async function crashCarts(query) {
       id: c.id,
       nombre: c.name,
       estado: c.status,
+      area: c.area ? c.area.name : null,
+      areaId: c.areaId,
       reactivadoEl: c.reactivatedAt,
       reactivadoPor: c.reactivatedBy ? c.reactivatedBy.username : null,
-      stock: c.stocks.map((st) => ({
-        item: st.crashCartItem.name,
-        intactasRestantes: st.intactUnitsRemaining,
-        estandar: st.crashCartItem.standardQuantity,
+      // Composición estándar del carro (no hay stock remanente en vivo).
+      composicionEstandar: c.items.map((it) => ({
+        item: it.name,
+        categoria: it.category,
+        cantidadEstandar: it.standardQuantity,
+        unidad: it.unit || null,
       })),
     })),
     consumptions: consumptions.map((k) => ({

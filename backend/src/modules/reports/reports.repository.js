@@ -50,7 +50,8 @@ module.exports = {
     prisma.crashCart.findMany({
       orderBy: { name: "asc" },
       include: {
-        stocks: { include: { crashCartItem: true } },
+        area: { select: { id: true, name: true } },
+        items: true,
         reactivatedBy: { select: { username: true } },
       },
     }),

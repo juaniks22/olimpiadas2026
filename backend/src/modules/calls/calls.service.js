@@ -117,6 +117,11 @@ async function validateConsumptions(list, crashCartId) {
     throw new AppError(409, "El carro de paro está Fuera de servicio y no puede seleccionarse");
   }
 
+  // Validar que cada ítem exista y pertenezca a ESTE carro (composición estándar por carro).
+  const itemIds = [...new Set(list.map((c) => c.crashCartItemId).filter(Boolean))];
+  const items = await cartsRepo.items.findByIds(itemIds);
+  const itemsById = new Map(items.map((it) => [it.id, it]));
+
   const normalized = [];
   for (const [i, cons] of list.entries()) {
     ensure(!!cons.crashCartItemId, `crashCartConsumptions[${i}].crashCartItemId es obligatorio`);
@@ -124,15 +129,9 @@ async function validateConsumptions(list, crashCartId) {
       Number.isInteger(cons.quantity) && cons.quantity > 0,
       `crashCartConsumptions[${i}].quantity debe ser un entero > 0`
     );
-    const stock = await cartsRepo.carts.stockFor(crashCartId, cons.crashCartItemId);
-    if (!stock) {
+    const item = itemsById.get(cons.crashCartItemId);
+    if (!item || item.crashCartId !== crashCartId) {
       throw new AppError(400, `El ítem ${cons.crashCartItemId} no pertenece al carro indicado`);
-    }
-    if (cons.quantity > stock.intactUnitsRemaining) {
-      throw new AppError(
-        409,
-        `Sin stock suficiente del ítem ${cons.crashCartItemId} (quedan ${stock.intactUnitsRemaining})`
-      );
     }
     normalized.push({ crashCartItemId: cons.crashCartItemId, quantity: cons.quantity });
   }
