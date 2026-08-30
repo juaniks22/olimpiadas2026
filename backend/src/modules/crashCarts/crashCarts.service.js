@@ -239,6 +239,50 @@ async function listConsumptions(id) {
   return repo.carts.consumptions(id);
 }
 
+// Ticket de reposición: qué se consumió del carro DESDE su última reactivación, agrupado por ítem.
+// El personal usa esto para revisar qué hay que restockear antes de reactivar.
+async function getRestockTicket(id) {
+  const cart = await repo.carts.findDetail(id);
+  if (!cart) throw new AppError(404, "Carro no encontrado");
+
+  const since = cart.reactivatedAt ? new Date(cart.reactivatedAt).getTime() : 0;
+  const relevant = (cart.consumptions || []).filter(
+    (c) => new Date(c.consumedAt).getTime() > since
+  );
+
+  const byItem = new Map();
+  for (const c of relevant) {
+    const it = c.crashCartItem;
+    const row = byItem.get(c.crashCartItemId) || {
+      itemId: c.crashCartItemId,
+      name: it ? it.name : "(ítem eliminado)",
+      unit: it ? it.unit : null,
+      category: it ? it.category : null,
+      standardQuantity: it ? it.standardQuantity : null,
+      consumed: 0,
+      timesUsed: 0,
+      lastConsumedAt: null,
+    };
+    row.consumed += c.quantity;
+    row.timesUsed += 1;
+    if (!row.lastConsumedAt || new Date(c.consumedAt) > new Date(row.lastConsumedAt)) {
+      row.lastConsumedAt = c.consumedAt;
+    }
+    byItem.set(c.crashCartItemId, row);
+  }
+
+  const lines = [...byItem.values()].sort((a, b) => a.name.localeCompare(b.name, "es"));
+  return {
+    cartId: cart.id,
+    cartName: cart.name,
+    status: cart.status,
+    areaName: cart.area ? cart.area.name : null,
+    lastReactivationAt: cart.reactivatedAt,
+    totalUnitsConsumed: lines.reduce((sum, l) => sum + l.consumed, 0),
+    lines,
+  };
+}
+
 // Elimina un carro de paro lógicamente solo si no tiene consumos registrados
 // ni ha sido referenciado en formularios de eventos previos.
 async function deleteCart(id) {
@@ -275,5 +319,6 @@ module.exports = {
   updateCart,
   reactivate,
   listConsumptions,
+  getRestockTicket,
   deleteCart,
 };

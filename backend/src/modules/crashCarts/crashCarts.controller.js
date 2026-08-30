@@ -15,6 +15,7 @@ module.exports = {
   listCarts: async (req, res) => res.json(await service.listCarts(req.query)),
   getCart: async (req, res) => res.json(await service.getCart(req.params.id)),
   listConsumptions: async (req, res) => res.json(await service.listConsumptions(req.params.id)),
+  restockTicket: async (req, res) => res.json(await service.getRestockTicket(req.params.id)),
   createCart: async (req, res) => res.status(201).json(await service.createCart(req.body)),
   loadDefaultComposition: async (req, res) =>
     res.json(await service.loadDefaultComposition(req.params.id)),

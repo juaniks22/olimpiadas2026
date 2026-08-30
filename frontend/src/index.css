@@ -2332,3 +2332,40 @@ table tr:hover td {
   display: flex;
   gap: var(--space-xs);
 }
+/* ---------------------------------------------------------------------------
+   Casilla de verificación — ticket de reposición del carro de paro
+--------------------------------------------------------------------------- */
+.restock-check {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 2px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  vertical-align: middle;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.restock-check:hover {
+  border-color: var(--color-primary);
+}
+.restock-check:checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.restock-check:checked::after {
+  content: "";
+  width: 6px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+.restock-check:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

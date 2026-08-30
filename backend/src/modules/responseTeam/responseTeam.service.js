@@ -86,6 +86,22 @@ async function updateStaff(id, body) {
   return repo.staff.update(id, data);
 }
 
+// Elimina un integrante. Se bloquea (409) si figura en asignaciones de llamados ya cargados
+// (son inmutables); en ese caso hay que desactivarlo.
+async function removeStaff(id) {
+  await getStaff(id);
+  const used = await repo.staff.countAssignments(id);
+  if (used > 0) {
+    throw new AppError(
+      409,
+      "No se puede eliminar: el integrante figura en llamados ya cargados. Desactivalo en su lugar.",
+      { asignaciones: used }
+    );
+  }
+  await repo.staff.remove(id);
+  return { ok: true };
+}
+
 module.exports = {
   listPositions,
   createPosition,
@@ -94,4 +110,5 @@ module.exports = {
   getStaff,
   createStaff,
   updateStaff,
+  removeStaff,
 };

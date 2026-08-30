@@ -16,5 +16,8 @@ module.exports = {
     findByDni: (dni) => prisma.staffMember.findUnique({ where: { dni } }),
     create: (data) => prisma.staffMember.create({ data }),
     update: (id, data) => prisma.staffMember.update({ where: { id }, data }),
+    remove: (id) => prisma.staffMember.delete({ where: { id } }),
+    // Nº de asignaciones a llamados (response_team_assignments.staffMemberId es ON DELETE RESTRICT).
+    countAssignments: (id) => prisma.responseTeamAssignment.count({ where: { staffMemberId: id } }),
   },
 };

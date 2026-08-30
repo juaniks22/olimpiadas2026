@@ -26,6 +26,7 @@ carts.get("/default-composition", controller.defaultComposition);
 carts.get("/", controller.listCarts);
 carts.get("/:id", controller.getCart);
 carts.get("/:id/consumptions", controller.listConsumptions);
+carts.get("/:id/restock-ticket", controller.restockTicket);
 carts.post("/", authorize("ADMIN"), controller.createCart);
 carts.post("/:id/load-default-composition", authorize("ADMIN"), controller.loadDefaultComposition);
 carts.patch("/:id", authorize("ADMIN"), controller.updateCart);

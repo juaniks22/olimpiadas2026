@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../App';
+import RestockTicketModal from '../../components/RestockTicketModal';
 
 // El backend responde los errores como { error: { message, details } }.
 async function readError(res, fallback) {
@@ -260,9 +261,26 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [qtyDraft, setQtyDraft] = useState({});
+  const [showRestock, setShowRestock] = useState(false);
+
+  // Secciones desplegables (colapsadas al abrir el modal).
+  const [showStock, setShowStock] = useState(false);
+  const [showConsumptions, setShowConsumptions] = useState(false);
+  const [consumptions, setConsumptions] = useState(null);
 
   const flash = (m) => { setMsg(m); setErr(''); };
   const fail = (m) => { setErr(m); setMsg(''); };
+
+  const loadConsumptions = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/crash-carts/${initialCart.id}/consumptions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setConsumptions(res.ok ? await res.json() : []);
+    } catch {
+      setConsumptions([]);
+    }
+  }, [API_URL, token, initialCart.id]);
 
   // Cargar detalle del carro y áreas
   const loadDetail = useCallback(async () => {
@@ -332,18 +350,11 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
     } finally { setBusy(false); }
   };
 
-  // OLI-69: Reactivar carro
-  const reactivateCart = async () => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-carts/${initialCart.id}/reactivate`, {
-        method: 'POST', headers: authHeaders,
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo reactivar el carro'));
-      flash('Carro reactivado — En operación');
-      onChanged();
-      await loadDetail();
-    } finally { setBusy(false); }
+  // Reactivar carro: pasa por el ticket de reposición (RestockTicketModal).
+  const onReactivated = async () => {
+    flash('Carro reactivado — En operación');
+    onChanged();
+    await loadDetail();
   };
 
   // OLI-70: Eliminar carro
@@ -469,7 +480,7 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
               {outOfService ? 'Fuera de Servicio' : 'En Operación'}
             </span>
             {outOfService && (
-              <button className="btn btn-sm btn-primary" onClick={reactivateCart} disabled={busy}>
+              <button className="btn btn-sm btn-primary" onClick={() => setShowRestock(true)} disabled={busy}>
                 Reactivar carro
               </button>
             )}
@@ -489,21 +500,49 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
           )}
         </section>
 
-        {/* --- OLI-71: Stock / Composición estándar --- */}
+        {/* --- Secciones desplegables --- */}
         <section>
-          <h3 style={{ marginBottom: 8 }}>Composición estándar (stock)</h3>
-          {cart === null ? (
-            <p style={{ color: 'var(--text-tertiary)' }}>Cargando...</p>
-          ) : (
-            <CartStockEditor
-              items={items}
-              busy={busy}
-              qtyDraft={qtyDraft}
-              onQtyChange={(itemId, value) => setQtyDraft((d) => ({ ...d, [itemId]: value }))}
-              onLoadDefault={loadDefault}
-              onRemoveItem={removeItem}
-              onAddItem={addItem}
-            />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="btn btn-sm btn-secondary" onClick={() => setShowStock((s) => !s)}>
+              {showStock ? '▾ Ocultar composición estándar (stock)' : '▸ Ver composición estándar (stock)'}
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => {
+                const next = !showConsumptions;
+                setShowConsumptions(next);
+                if (next && consumptions === null) loadConsumptions();
+              }}
+            >
+              {showConsumptions ? '▾ Ocultar historial de consumos' : '▸ Ver historial de consumos'}
+            </button>
+          </div>
+
+          {showStock && (
+            <div style={{ marginTop: 14 }}>
+              <h3 style={{ marginBottom: 8 }}>Composición estándar (stock)</h3>
+              {cart === null ? (
+                <p style={{ color: 'var(--text-tertiary)' }}>Cargando...</p>
+              ) : (
+                <CartStockEditor
+                  items={items}
+                  busy={busy}
+                  qtyDraft={qtyDraft}
+                  onQtyChange={(itemId, value) => setQtyDraft((d) => ({ ...d, [itemId]: value }))}
+                  onLoadDefault={loadDefault}
+                  onRemoveItem={removeItem}
+                  onAddItem={addItem}
+                />
+              )}
+            </div>
+          )}
+
+          {showConsumptions && (
+            <div style={{ marginTop: 14 }}>
+              <h3 style={{ marginBottom: 8 }}>Historial de consumos</h3>
+              <ConsumptionHistory consumptions={consumptions} />
+            </div>
           )}
         </section>
 
@@ -519,6 +558,16 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
           </button>
         </div>
       </div>
+
+      {showRestock && (
+        <RestockTicketModal
+          cartId={initialCart.id}
+          token={token}
+          API_URL={API_URL}
+          onClose={() => setShowRestock(false)}
+          onReactivated={onReactivated}
+        />
+      )}
     </div>
   );
 }
@@ -609,5 +658,115 @@ function CartStockEditor({ items, busy, qtyDraft, onQtyChange, onLoadDefault, on
         <button className="btn btn-sm btn-secondary" style={{ marginTop: 10 }} onClick={() => setAdding(true)}>+ Agregar ítem</button>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Historial de consumos del carro (todos los consumos a lo largo del tiempo)
+// con filtros por fecha, ítem y tipo de llamado.
+// ---------------------------------------------------------------------------
+function ConsumptionHistory({ consumptions }) {
+  const [filter, setFilter] = useState({ from: '', to: '', item: 'ALL', type: 'ALL' });
+
+  if (consumptions === null) {
+    return <p style={{ color: 'var(--text-tertiary)' }}>Cargando...</p>;
+  }
+  if (consumptions.length === 0) {
+    return <p style={{ color: 'var(--text-tertiary)' }}>Este carro no registra consumos.</p>;
+  }
+
+  const itemNames = [...new Set(consumptions.map((c) => c.crashCartItem?.name).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'es'));
+
+  const rows = consumptions.filter((c) => {
+    const d = new Date(c.consumedAt);
+    if (filter.from && d < new Date(`${filter.from}T00:00:00`)) return false;
+    if (filter.to && d > new Date(`${filter.to}T23:59:59`)) return false;
+    if (filter.item !== 'ALL' && c.crashCartItem?.name !== filter.item) return false;
+    if (filter.type !== 'ALL' && c.call?.type !== filter.type) return false;
+    return true;
+  });
+
+  const totalUnits = rows.reduce((s, c) => s + c.quantity, 0);
+  const filtered = filter.from || filter.to || filter.item !== 'ALL' || filter.type !== 'ALL';
+  const set = (patch) => setFilter((f) => ({ ...f, ...patch }));
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 10 }}>
+        <div className="input-group" style={{ margin: 0 }}>
+          <label>Desde</label>
+          <input type="date" className="input" value={filter.from} onChange={(e) => set({ from: e.target.value })} />
+        </div>
+        <div className="input-group" style={{ margin: 0 }}>
+          <label>Hasta</label>
+          <input type="date" className="input" value={filter.to} onChange={(e) => set({ to: e.target.value })} />
+        </div>
+        <div className="input-group" style={{ margin: 0 }}>
+          <label>Ítem</label>
+          <select className="input" value={filter.item} onChange={(e) => set({ item: e.target.value })}>
+            <option value="ALL">Todos</option>
+            {itemNames.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div className="input-group" style={{ margin: 0 }}>
+          <label>Tipo de llamado</label>
+          <select className="input" value={filter.type} onChange={(e) => set({ type: e.target.value })}>
+            <option value="ALL">Todos</option>
+            <option value="EMERGENCY">Emergencia</option>
+            <option value="NORMAL">Normal</option>
+          </select>
+        </div>
+        {filtered && (
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={() => setFilter({ from: '', to: '', item: 'ALL', type: 'ALL' })}
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
+        {rows.length} consumo(s) · {totalUnits} unidad(es) en total
+      </p>
+
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style={{ width: 40, textAlign: 'right' }}>#</th>
+              <th>Fecha y hora</th>
+              <th>Ítem</th>
+              <th style={{ width: 90 }}>Cantidad</th>
+              <th>Unidad</th>
+              <th>Llamado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Sin consumos para los filtros elegidos</td></tr>
+            ) : (
+              rows.map((c, i) => (
+                <tr key={c.id}>
+                  <td style={{ textAlign: 'right', color: 'var(--text-tertiary)' }}>{i + 1}</td>
+                  <td>{new Date(c.consumedAt).toLocaleString('es-AR')}</td>
+                  <td>{c.crashCartItem?.name || '(ítem eliminado)'}</td>
+                  <td>{c.quantity}</td>
+                  <td>{c.crashCartItem?.unit || '—'}</td>
+                  <td>
+                    {c.call ? (
+                      <span className={`badge ${c.call.type === 'EMERGENCY' ? 'badge-danger' : 'badge-info'}`}>
+                        {c.call.type === 'EMERGENCY' ? 'Emergencia' : 'Normal'}
+                      </span>
+                    ) : '—'}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

@@ -2,16 +2,7 @@ import { useState, useEffect, useContext, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../App';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-
-// El backend responde los errores como { error: { message, details } }.
-async function readError(res, fallback) {
-  try {
-    const data = await res.json();
-    return data?.error?.message || fallback;
-  } catch {
-    return fallback;
-  }
-}
+import RestockTicketModal from '../../components/RestockTicketModal';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -114,8 +105,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [recentReports, setRecentReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(true);
-  const [reactivatingId, setReactivatingId] = useState(null);
-  const [reactivateError, setReactivateError] = useState('');
+  const [restockCartId, setRestockCartId] = useState(null);
 
   const authHeaders = { Authorization: `Bearer ${token}` };
 
@@ -193,26 +183,7 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // OLI-69: Reactivar carro directamente desde "Atención Requerida"
-  const reactivateCart = async (cartId) => {
-    setReactivatingId(cartId);
-    setReactivateError('');
-    try {
-      const res = await fetch(`${API_URL}/api/crash-carts/${cartId}/reactivate`, {
-        method: 'POST',
-        headers: authHeaders,
-      });
-      if (!res.ok) {
-        setReactivateError(await readError(res, 'No se pudo reactivar el carro'));
-        return;
-      }
-      await fetchDashboardData();
-    } catch {
-      setReactivateError('Error de conexión al reactivar el carro');
-    } finally {
-      setReactivatingId(null);
-    }
-  };
+  // Reactivar carro desde "Atención Requerida": abre el ticket de reposición.
 
   // Últimos 5 reportes cargados en el sistema (independiente del selector de período:
   // siempre son los 5 más recientes, no los 5 más recientes DENTRO del rango elegido).
@@ -322,12 +293,6 @@ export default function AdminDashboard() {
             </Link>
           </div>
 
-          {reactivateError && (
-            <p style={{ color: '#F43F5E', fontSize: '0.8125rem', marginBottom: 'var(--space-md)' }}>
-              {reactivateError}
-            </p>
-          )}
-
           {blockedCarts.map((cart) => (
             <div key={cart.id} className="attention-item">
               <div className="attention-item-info">
@@ -340,12 +305,8 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => reactivateCart(cart.id)}
-                disabled={reactivatingId === cart.id}
-              >
-                {reactivatingId === cart.id ? 'Reactivando...' : 'Reactivar'}
+              <button className="btn btn-sm btn-primary" onClick={() => setRestockCartId(cart.id)}>
+                Reactivar
               </button>
             </div>
           ))}
@@ -439,6 +400,16 @@ export default function AdminDashboard() {
           </table>
         </div>
       </div>
+
+      {restockCartId && (
+        <RestockTicketModal
+          cartId={restockCartId}
+          token={token}
+          API_URL={API_URL}
+          onClose={() => setRestockCartId(null)}
+          onReactivated={fetchDashboardData}
+        />
+      )}
     </>
   );
 }

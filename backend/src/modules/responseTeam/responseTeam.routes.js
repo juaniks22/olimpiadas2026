@@ -18,5 +18,6 @@ staff.get("/", controller.listStaff);
 staff.get("/:id", controller.getStaff);
 staff.post("/", authorize("ADMIN"), controller.createStaff);
 staff.patch("/:id", authorize("ADMIN"), controller.updateStaff);
+staff.delete("/:id", authorize("ADMIN"), controller.removeStaff);
 
 module.exports = { positions, staff };
