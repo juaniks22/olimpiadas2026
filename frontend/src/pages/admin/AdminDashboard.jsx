@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../../App';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
+// El backend responde los errores como { error: { message, details } }.
+async function readError(res, fallback) {
+  try {
+    const data = await res.json();
+    return data?.error?.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -104,6 +114,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [recentReports, setRecentReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(true);
+  const [reactivatingId, setReactivatingId] = useState(null);
+  const [reactivateError, setReactivateError] = useState('');
 
   const authHeaders = { Authorization: `Bearer ${token}` };
 
@@ -180,6 +192,27 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // OLI-69: Reactivar carro directamente desde "Atención Requerida"
+  const reactivateCart = async (cartId) => {
+    setReactivatingId(cartId);
+    setReactivateError('');
+    try {
+      const res = await fetch(`${API_URL}/api/crash-carts/${cartId}/reactivate`, {
+        method: 'POST',
+        headers: authHeaders,
+      });
+      if (!res.ok) {
+        setReactivateError(await readError(res, 'No se pudo reactivar el carro'));
+        return;
+      }
+      await fetchDashboardData();
+    } catch {
+      setReactivateError('Error de conexión al reactivar el carro');
+    } finally {
+      setReactivatingId(null);
+    }
+  };
 
   // Últimos 5 reportes cargados en el sistema (independiente del selector de período:
   // siempre son los 5 más recientes, no los 5 más recientes DENTRO del rango elegido).
@@ -284,8 +317,16 @@ export default function AdminDashboard() {
         <div className="card-flat">
           <div className="attention-header">
             <h3>Atención Requerida</h3>
-            <button className="btn btn-sm btn-secondary">Ver todos</button>
+            <Link to="/admin/crash-carts" className="btn btn-sm btn-secondary">
+              Ver todos
+            </Link>
           </div>
+
+          {reactivateError && (
+            <p style={{ color: '#F43F5E', fontSize: '0.8125rem', marginBottom: 'var(--space-md)' }}>
+              {reactivateError}
+            </p>
+          )}
 
           {blockedCarts.map((cart) => (
             <div key={cart.id} className="attention-item">
@@ -299,7 +340,13 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <button className="btn btn-sm btn-primary">Reactivar</button>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => reactivateCart(cart.id)}
+                disabled={reactivatingId === cart.id}
+              >
+                {reactivatingId === cart.id ? 'Reactivando...' : 'Reactivar'}
+              </button>
             </div>
           ))}
 
@@ -319,7 +366,7 @@ export default function AdminDashboard() {
             </div>
             <select
               className="input"
-              style={{ width: 'auto', padding: '8px 12px', fontSize: '0.8125rem' }}
+              style={{ width: 'auto', padding: '8px 32px 8px 12px', fontSize: '0.8125rem' }}
               value={range}
               onChange={(e) => setRange(e.target.value)}
             >
