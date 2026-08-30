@@ -1,11 +1,12 @@
 import { useContext, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
+import { HomeIcon, HistoryIcon } from '../components/SidebarIcons';
 
 const navItems = [
-  { to: '/app', label: 'Panel Principal', icon: '', end: true },
-  { to: '/app/history', label: 'Mi Historial', icon: '' },
+  { to: '/app', label: 'Panel Principal', icon: <HomeIcon />, end: true },
+  { to: '/app/history', label: 'Mi Historial', icon: <HistoryIcon /> },
 ];
 
 export default function GenericLayout() {
@@ -26,12 +27,12 @@ export default function GenericLayout() {
     <div className="app-layout">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div className="sidebar-brand">
+        <Link to="/app" className="sidebar-brand" aria-label="Ir al panel principal">
           <div className="sidebar-brand-icon">
             <HeartPulseIcon size={20} color="white" />
           </div>
           <span className="sidebar-brand-text">BlueCode</span>
-        </div>
+        </Link>
 
         <nav className="sidebar-nav">
           {navItems.map((item) => (

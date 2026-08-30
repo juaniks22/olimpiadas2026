@@ -130,7 +130,12 @@ async function summary(query) {
 }
 
 async function calls(query) {
-  return flattenCalls(await repo.calls(parseFilters(query)));
+  let take;
+  if (query.limit !== undefined) {
+    const n = Number(query.limit);
+    if (Number.isInteger(n) && n > 0) take = n;
+  }
+  return flattenCalls(await repo.calls(parseFilters(query), { take }));
 }
 
 async function exportCsv(query) {
@@ -201,6 +206,7 @@ async function crashCarts(query) {
     })),
     consumptions: consumptions.map((k) => ({
       fecha: k.consumedAt,
+      carroId: k.crashCartId,
       carro: k.crashCart ? k.crashCart.name : null,
       item: k.crashCartItem ? k.crashCartItem.name : null,
       cantidad: k.quantity,
@@ -210,4 +216,3 @@ async function crashCarts(query) {
 }
 
 module.exports = { summary, calls, exportCsv, exportPdf, crashCarts };
-

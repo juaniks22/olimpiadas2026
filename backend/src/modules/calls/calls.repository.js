@@ -17,8 +17,13 @@ const fullInclude = {
 
 module.exports = {
   fullInclude,
-  findMany: (where) =>
-    prisma.call.findMany({ where, include: fullInclude, orderBy: { createdAt: "desc" } }),
+  findMany: (where, options = {}) =>
+    prisma.call.findMany({
+      where,
+      include: fullInclude,
+      orderBy: { createdAt: "desc" },
+      ...(options.take ? { take: options.take } : {}),
+    }),
   findById: (id) => prisma.call.findUnique({ where: { id }, include: fullInclude }),
 
   // Crea Call + EventForm + hijos + consumos del carro en UNA transacción (todo o nada).

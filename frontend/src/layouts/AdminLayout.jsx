@@ -1,16 +1,25 @@
 import { useContext, useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
+import {
+  DashboardIcon,
+  CrashCartIcon,
+  AreaIcon,
+  UsersIcon,
+  UserCheckIcon,
+  ShieldIcon,
+  ReportsIcon,
+} from '../components/SidebarIcons';
 
 const navItems = [
-  { to: '/admin', label: 'Dashboard', icon: '', end: true },
-  { to: '/admin/crash-carts', label: 'Carros de Paro', icon: '' },
-  { to: '/admin/areas', label: 'Áreas', icon: '' },
-  { to: '/admin/users', label: 'Cuentas', icon: '' },
-  { to: '/admin/staff', label: 'Personal Certificado', icon: '' },
-  { to: '/admin/response-team-positions', label: 'Equipos de Respuesta', icon: '' },
-  { to: '/admin/reports', label: 'Reportes', icon: '' },
+  { to: '/admin', label: 'Dashboard', icon: <DashboardIcon />, end: true },
+  { to: '/admin/crash-carts', label: 'Carros de Paro', icon: <CrashCartIcon /> },
+  { to: '/admin/areas', label: 'Áreas', icon: <AreaIcon /> },
+  { to: '/admin/users', label: 'Cuentas', icon: <UsersIcon /> },
+  { to: '/admin/staff', label: 'Personal Certificado', icon: <UserCheckIcon /> },
+  { to: '/admin/response-team-positions', label: 'Equipos de Respuesta', icon: <ShieldIcon /> },
+  { to: '/admin/reports', label: 'Reportes', icon: <ReportsIcon /> },
 ];
 
 export default function AdminLayout() {
@@ -32,12 +41,12 @@ export default function AdminLayout() {
     <div className="app-layout">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div className="sidebar-brand">
+        <Link to="/admin" className="sidebar-brand" aria-label="Ir al dashboard">
           <div className="sidebar-brand-icon">
             <HeartPulseIcon size={20} color="white" />
           </div>
           <span className="sidebar-brand-text">BlueCode</span>
-        </div>
+        </Link>
 
         <nav className="sidebar-nav">
           {navItems.map((item) => (

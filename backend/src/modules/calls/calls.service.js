@@ -206,7 +206,14 @@ async function list(user, query) {
     }
   }
 
-  return repo.findMany(where);
+  // limit opcional (ej. GenericDashboard pide los últimos 5). Sin límite -> comportamiento previo.
+  let take;
+  if (query.limit !== undefined) {
+    const n = Number(query.limit);
+    if (Number.isInteger(n) && n > 0) take = n;
+  }
+
+  return repo.findMany(where, { take });
 }
 
 async function getById(user, id) {

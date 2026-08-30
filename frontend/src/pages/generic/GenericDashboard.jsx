@@ -10,33 +10,52 @@ export default function GenericDashboard() {
   const navigate = useNavigate();
   const [callsToday, setCallsToday] = useState(0);
   const [recentCalls, setRecentCalls] = useState([]);
-  const [cartStatus, setCartStatus] = useState({ name: '—', status: 'IN_SERVICE' });
+  // Desde la v2.4 las cuentas Genérico NO están atadas a un área/carro fijo
+  // (se eligen por llamado en el wizard), así que acá se muestra el estado
+  // real de TODOS los carros, no un "mi carro" inventado.
+  const [carts, setCarts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [selectedCall, setSelectedCall] = useState(null);
 
   const fetchCalls = async () => {
     try {
+      // El backend ahora sí respeta "limit": trae únicamente los últimos 5 llamados propios.
       const callsRes = await fetch(`${API_URL}/api/calls?limit=5`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (callsRes.ok) {
         const callsData = await callsRes.json();
         const calls = Array.isArray(callsData) ? callsData : callsData.data || [];
-        setRecentCalls(calls);
+        // slice defensivo por si el backend desplegado todavía no aplica el límite
+        setRecentCalls(calls.slice(0, 5));
 
         const today = new Date().toDateString();
-        setCallsToday(calls.filter(c => new Date(c.createdAt).toDateString() === today).length);
+        setCallsToday(calls.filter((c) => new Date(c.createdAt).toDateString() === today).length);
       }
     } catch (err) {
       console.error('Error fetching calls:', err);
     }
   };
 
+  const fetchCartsStatus = async () => {
+    try {
+      const cartsRes = await fetch(`${API_URL}/api/crash-carts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (cartsRes.ok) {
+        const cartsData = await cartsRes.json();
+        setCarts(Array.isArray(cartsData) ? cartsData : cartsData.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching crash carts:', err);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await fetchCalls();
+      await Promise.all([fetchCalls(), fetchCartsStatus()]);
       setLoading(false);
     };
     init();
@@ -73,6 +92,10 @@ export default function GenericDashboard() {
     setSelectedCall(mapCallToReportFormat(call));
   };
 
+  const totalCarts = carts.length;
+  const cartsInService = carts.filter((c) => c.status === 'IN_SERVICE').length;
+  const cartsBlocked = totalCarts - cartsInService;
+
   return (
     <>
       {/* Top Cards */}
@@ -93,16 +116,20 @@ export default function GenericDashboard() {
           <span className="stat-card-value">{loading ? '...' : callsToday}</span>
         </div>
 
-        {/* Cart Status */}
+        {/* Carts Status (real, no hardcodeado) */}
         <div className="stat-card">
-          <span className="stat-card-label">Estado del Carro</span>
+          <span className="stat-card-label">Carros de Paro</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className={`status-dot ${cartStatus.status === 'IN_SERVICE' ? 'active' : 'inactive'}`}></span>
+            <span className={`status-dot ${cartsBlocked === 0 ? 'active' : 'inactive'}`}></span>
             <span className="stat-card-value" style={{ fontSize: '1.25rem' }}>
-              {cartStatus.status === 'IN_SERVICE' ? 'En Operación' : 'Fuera de Servicio'}
+              {loading ? '...' : `${cartsInService} / ${totalCarts} en operación`}
             </span>
           </div>
-          <span className="stat-card-sub">Asignado a: {cartStatus.name}</span>
+          <span className="stat-card-sub">
+            {!loading && cartsBlocked > 0
+              ? `${cartsBlocked} carro(s) fuera de servicio — elegí el área con cuidado al cargar un evento`
+              : 'Todos los carros disponibles'}
+          </span>
         </div>
       </div>
 

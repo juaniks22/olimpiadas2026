@@ -25,10 +25,11 @@ function callWhere(f = {}) {
 
 module.exports = {
   callWhere,
-  calls: (f = {}) =>
+  calls: (f = {}, options = {}) =>
     prisma.call.findMany({
       where: callWhere(f),
       orderBy: { createdAt: f.sortOrder === "asc" ? "asc" : "desc" },
+      ...(options.take ? { take: options.take } : {}),
       include: {
         area: true,
         createdBy: { select: { id: true, username: true } },
@@ -65,4 +66,3 @@ module.exports = {
       orderBy: { consumedAt: "desc" },
     }),
 };
-
