@@ -27,29 +27,49 @@ const successBoxStyle = {
   color: '#16A34A',
 };
 
-// Caja para mostrar una contraseña recién generada: se ve una sola vez, así que
-// se resalta bien y se puede copiar directo.
-function GeneratedPasswordBox({ password }) {
-  const [copied, setCopied] = useState(false);
-  if (!password) return null;
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(password);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Si el navegador no permite clipboard, el usuario igual puede seleccionar el texto a mano.
-    }
-  };
+const EyeIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+const EyeOffIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+    <line x1="2" y1="2" x2="22" y2="22" />
+  </svg>
+);
+
+// Campo de contraseña con el ojito de ver/ocultar DENTRO del input.
+function PasswordField({ id, value, onChange, placeholder, show, onToggle, required }) {
   return (
-    <div style={successBoxStyle}>
-      <div style={{ marginBottom: 6 }}>Contraseña generada — guardala ahora, no se vuelve a mostrar:</div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <code style={{ fontSize: '1rem', fontWeight: 700, userSelect: 'all' }}>{password}</code>
-        <button type="button" className="btn btn-sm btn-secondary" onClick={copy}>
-          {copied ? 'Copiado ✓' : 'Copiar'}
-        </button>
-      </div>
+    <div style={{ position: 'relative', flex: 1 }}>
+      <input
+        id={id}
+        className="input"
+        type={show ? 'text' : 'password'}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+        minLength={8}
+        maxLength={12}
+        style={{ width: '100%', paddingRight: 40 }}
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={show ? 'Ocultar contraseña' : 'Ver contraseña'}
+        title={show ? 'Ocultar contraseña' : 'Ver contraseña'}
+        style={{
+          position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+          background: 'none', border: 'none', cursor: 'pointer', padding: 2,
+          display: 'flex', alignItems: 'center', color: 'var(--text-tertiary)',
+        }}
+      >
+        {show ? <EyeOffIcon /> : <EyeIcon />}
+      </button>
     </div>
   );
 }
@@ -166,69 +186,50 @@ export default function UsersPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Modal de creación. El rol siempre queda GENERIC (el backend lo fuerza igual,
-// no existe forma de crear otro Administrador desde acá).
+// Alta de cuenta (siempre rol GENERIC). Clave manual o generada con "Generar".
 // ---------------------------------------------------------------------------
 function CreateUserModal({ API_URL, authHeaders, onClose, onCreated }) {
   const [username, setUsername] = useState('');
-  const [autoPassword, setAutoPassword] = useState(true);
-  const [manualPassword, setManualPassword] = useState('');
-  const [showManualPassword, setShowManualPassword] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [generatedPassword, setGeneratedPassword] = useState('');
-  const [createdUsername, setCreatedUsername] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const generate = async () => {
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/api/users/generate-password`, { method: 'POST', headers: authHeaders });
+      if (!res.ok) return setError(await readError(res, 'No se pudo generar la clave'));
+      const data = await res.json();
+      setPassword(data.password || '');
+      setShowPassword(true); // mostrarla para que el Admin la copie
+    } catch {
+      setError('Error de conexión');
+    }
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
     setError('');
-    setCreating(true);
+    setBusy(true);
     try {
-      const body = autoPassword
-        ? { username: username.trim(), generatePassword: true }
-        : { username: username.trim(), password: manualPassword };
-
       const res = await fetch(`${API_URL}/api/users`, {
-        method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify(body),
+        method: 'POST', headers: authHeaders,
+        body: JSON.stringify({ username: username.trim(), password }),
       });
       if (!res.ok) {
         setError(await readError(res, 'No se pudo crear la cuenta'));
         return;
       }
-      const data = await res.json();
-      setCreatedUsername(data.username);
-      if (data.generatedPassword) setGeneratedPassword(data.generatedPassword);
       onCreated();
-      if (!data.generatedPassword) onClose();
+      onClose();
     } catch (err) {
       console.error('Error creating user:', err);
       setError('Error de conexión');
     } finally {
-      setCreating(false);
+      setBusy(false);
     }
   };
-
-  // Si ya se creó la cuenta y hubo contraseña generada, mostramos el resultado
-  // en vez del formulario, para que se pueda copiar antes de cerrar.
-  if (generatedPassword) {
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal slide-up" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>Cuenta creada</h2>
-            <button className="btn-icon" onClick={onClose}>✕</button>
-          </div>
-          <p>Usuario: <strong>{createdUsername}</strong></p>
-          <GeneratedPasswordBox password={generatedPassword} />
-          <div className="modal-actions">
-            <button className="btn btn-primary" onClick={onClose}>Listo</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -253,40 +254,28 @@ function CreateUserModal({ API_URL, authHeaders, onClose, onCreated }) {
           </div>
 
           <div className="input-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={autoPassword}
-                onChange={(e) => setAutoPassword(e.target.checked)}
+            <label htmlFor="new-user-password">Contraseña</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <PasswordField
+                id="new-user-password"
+                placeholder="8-12 caract.: mayús, minús, número y símbolo"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                show={showPassword}
+                onToggle={() => setShowPassword((s) => !s)}
+                required
               />
-              Generar contraseña segura automáticamente (recomendado)
-            </label>
-          </div>
-
-          {!autoPassword && (
-            <div className="input-group">
-              <label htmlFor="new-user-password">Contraseña</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  id="new-user-password"
-                  className="input"
-                  type={showManualPassword ? 'text' : 'password'}
-                  placeholder="8-12 caracteres, mayúscula, minúscula, número y símbolo"
-                  value={manualPassword}
-                  onChange={(e) => setManualPassword(e.target.value)}
-                  required={!autoPassword}
-                />
-                <button type="button" className="btn btn-secondary" onClick={() => setShowManualPassword((s) => !s)}>
-                  {showManualPassword ? 'Ocultar' : 'Ver'}
-                </button>
-              </div>
+              <button type="button" className="btn btn-secondary" onClick={generate}>Generar</button>
             </div>
-          )}
+            <small style={{ color: 'var(--text-tertiary)' }}>
+              "Generar" crea una clave segura automáticamente. Copiala antes de guardar.
+            </small>
+          </div>
 
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-            <button id="btn-save-user" type="submit" className="btn btn-primary" disabled={creating}>
-              {creating ? 'Creando...' : 'Crear cuenta'}
+            <button id="btn-save-user" type="submit" className="btn btn-primary" disabled={busy}>
+              {busy ? 'Creando...' : 'Crear cuenta'}
             </button>
           </div>
         </form>
@@ -296,65 +285,71 @@ function CreateUserModal({ API_URL, authHeaders, onClose, onCreated }) {
 }
 
 // ---------------------------------------------------------------------------
-// Modal de gestión de una cuenta existente: cambiar nombre/contraseña,
-// activar/desactivar, eliminar. Si es la cuenta ADMIN, se bloquean acciones
-// que el backend igual rechazaría (username, desactivar, eliminar) para no
-// mostrar un error al pedo: solo queda habilitado el cambio de contraseña.
+// Gestión de una cuenta existente. Un solo "Guardar" abajo a la derecha aplica
+// el cambio de nombre y/o contraseña juntos. La cuenta ADMIN solo permite
+// cambiar la contraseña.
 // ---------------------------------------------------------------------------
 function ManageUserModal({ user, API_URL, authHeaders, onClose, onChanged }) {
   const isAdmin = user.role === 'ADMIN';
 
   const [username, setUsername] = useState(user.username);
   const [isActive, setIsActive] = useState(user.isActive);
+  const [newPass, setNewPass] = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-
-  const [autoPassword, setAutoPassword] = useState(true);
-  const [manualPassword, setManualPassword] = useState('');
-  const [showManualPassword, setShowManualPassword] = useState(false);
-  const [generatedPassword, setGeneratedPassword] = useState('');
-
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const flash = (m) => { setMsg(m); setErr(''); };
   const fail = (m) => { setErr(m); setMsg(''); };
 
-  const saveUsername = async () => {
-    setBusy(true);
+  const usernameChanged = !isAdmin && username.trim() && username.trim() !== user.username;
+  const hasNewPass = newPass.length > 0;
+  const dirty = usernameChanged || hasNewPass;
+
+  const generatePass = async () => {
+    setErr('');
     try {
-      const res = await fetch(`${API_URL}/api/users/${user.id}`, {
-        method: 'PATCH', headers: authHeaders,
-        body: JSON.stringify({ username: username.trim() }),
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo actualizar el usuario'));
-      flash('Nombre de usuario actualizado');
-      onChanged();
-    } catch (e) {
-      console.error(e);
+      const res = await fetch(`${API_URL}/api/users/generate-password`, { method: 'POST', headers: authHeaders });
+      if (!res.ok) return fail(await readError(res, 'No se pudo generar la clave'));
+      const data = await res.json();
+      setNewPass(data.password || '');
+      setShowPass(true);
+    } catch {
       fail('Error de conexión');
-    } finally {
-      setBusy(false);
     }
   };
 
-  const savePassword = async () => {
-    setErr(''); setMsg(''); setGeneratedPassword('');
+  // Un solo Guardar: aplica lo que haya cambiado (nombre y/o contraseña).
+  const handleSave = async () => {
+    if (!dirty) return;
+    if (hasNewPass && (newPass.length < 8 || newPass.length > 12)) {
+      return fail('La contraseña debe tener entre 8 y 12 caracteres');
+    }
     setBusy(true);
     try {
-      const body = autoPassword ? { generatePassword: true } : { password: manualPassword };
-      const res = await fetch(`${API_URL}/api/users/${user.id}/reset-password`, {
-        method: 'POST', headers: authHeaders,
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo cambiar la contraseña'));
-      const data = await res.json();
-      if (data.generatedPassword) {
-        setGeneratedPassword(data.generatedPassword);
-      } else {
-        flash('Contraseña actualizada');
+      const done = [];
+      if (usernameChanged) {
+        const res = await fetch(`${API_URL}/api/users/${user.id}`, {
+          method: 'PATCH', headers: authHeaders,
+          body: JSON.stringify({ username: username.trim() }),
+        });
+        if (!res.ok) return fail(await readError(res, 'No se pudo cambiar el nombre de usuario'));
+        done.push('nombre de usuario');
       }
-      setManualPassword('');
+      if (hasNewPass) {
+        const res = await fetch(`${API_URL}/api/users/${user.id}/reset-password`, {
+          method: 'POST', headers: authHeaders,
+          body: JSON.stringify({ password: newPass }),
+        });
+        if (!res.ok) return fail(await readError(res, 'No se pudo cambiar la contraseña'));
+        done.push('contraseña');
+        setNewPass('');
+        setShowPass(false);
+      }
+      flash(`Actualizado: ${done.join(' y ')}.`);
+      onChanged();
     } catch (e) {
       console.error(e);
       fail('Error de conexión');
@@ -389,7 +384,6 @@ function ManageUserModal({ user, API_URL, authHeaders, onClose, onChanged }) {
         method: 'DELETE', headers: authHeaders,
       });
       if (!res.ok) {
-        // Si tiene llamados cargados, el backend devuelve 409 y sugiere desactivar en su lugar.
         setConfirmDelete(false);
         return fail(await readError(res, 'No se pudo eliminar la cuenta'));
       }
@@ -420,72 +414,32 @@ function ManageUserModal({ user, API_URL, authHeaders, onClose, onChanged }) {
           </div>
         )}
 
-        {/* --- Nombre de usuario --- */}
-        <section style={{ marginBottom: 20 }}>
-          <h3 style={{ marginBottom: 8 }}>Nombre de usuario</h3>
-          <div className="input-group">
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                className="input"
-                value={username}
-                disabled={isAdmin}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-              <button
-                className="btn btn-secondary"
-                onClick={saveUsername}
-                disabled={busy || isAdmin || username.trim() === user.username || !username.trim()}
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </section>
+        {!isAdmin && (
+          <section style={{ marginBottom: 18 }}>
+            <h3 style={{ marginBottom: 8 }}>Nombre de usuario</h3>
+            <input
+              className="input"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={usernameChanged ? { borderColor: '#F59E0B' } : undefined}
+            />
+          </section>
+        )}
 
-        {/* --- Contraseña --- */}
-        <section style={{ marginBottom: 20 }}>
+        <section style={{ marginBottom: 18 }}>
           <h3 style={{ marginBottom: 8 }}>Cambiar contraseña</h3>
-
-          <GeneratedPasswordBox password={generatedPassword} />
-
-          <div className="input-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={autoPassword}
-                onChange={(e) => setAutoPassword(e.target.checked)}
-              />
-              Generar contraseña segura automáticamente
-            </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <PasswordField
+              placeholder="Dejar vacío para no cambiarla"
+              value={newPass}
+              onChange={(e) => setNewPass(e.target.value)}
+              show={showPass}
+              onToggle={() => setShowPass((s) => !s)}
+            />
+            <button className="btn btn-secondary" onClick={generatePass} disabled={busy}>Generar</button>
           </div>
-
-          {!autoPassword && (
-            <div className="input-group">
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  className="input"
-                  type={showManualPassword ? 'text' : 'password'}
-                  placeholder="8-12 caracteres, mayúscula, minúscula, número y símbolo"
-                  value={manualPassword}
-                  onChange={(e) => setManualPassword(e.target.value)}
-                />
-                <button type="button" className="btn btn-secondary" onClick={() => setShowManualPassword((s) => !s)}>
-                  {showManualPassword ? 'Ocultar' : 'Ver'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <button
-            className="btn btn-primary"
-            onClick={savePassword}
-            disabled={busy || (!autoPassword && !manualPassword)}
-          >
-            Guardar contraseña
-          </button>
         </section>
 
-        {/* --- Estado y eliminación --- */}
         {!isAdmin && (
           <section>
             <h3 style={{ marginBottom: 8 }}>Estado de la cuenta</h3>
@@ -515,6 +469,9 @@ function ManageUserModal({ user, API_URL, authHeaders, onClose, onChanged }) {
 
         <div className="modal-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cerrar</button>
+          <button type="button" className="btn btn-primary" onClick={handleSave} disabled={busy || !dirty}>
+            Guardar
+          </button>
         </div>
       </div>
     </div>
