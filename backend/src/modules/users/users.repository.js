@@ -28,4 +28,8 @@ module.exports = {
   create: (data) => prisma.user.create({ data, select: publicSelect }),
   // Actualiza los datos de un usuario existente.
   update: (id, data) => prisma.user.update({ where: { id }, data, select: publicSelect }),
+  // Elimina una cuenta. (calls.createdByUserId es ON DELETE RESTRICT: el Service valida antes).
+  remove: (id) => prisma.user.delete({ where: { id } }),
+  // Cantidad de llamados cargados por esta cuenta (bloquea el borrado si hay).
+  countCalls: (userId) => prisma.call.count({ where: { createdByUserId: userId } }),
 };
