@@ -52,7 +52,7 @@ async function main() {
       positionId: position.id,
       name: m.name,
       standardQuantity: DEFAULT_STANDARD_QUANTITY,
-      unit: null,
+      unit: m.unit || null,
       category: m.category,
     })),
   });

@@ -35,7 +35,14 @@ module.exports = {
   carts: {
     findMany: (where) => prisma.crashCart.findMany({ where, orderBy: { name: "asc" }, include: { area: true } }),
     findById: (id) => prisma.crashCart.findUnique({ where: { id } }),
-    countByArea: (areaId) => prisma.crashCart.count({ where: { areaId } }),
+    // El carro más antiguo del área (su "carro estándar"), con sus ítems. Sirve de plantilla
+    // para los carros nuevos que se asignan a esa área.
+    templateForArea: (areaId, excludeCartId) =>
+      prisma.crashCart.findFirst({
+        where: { areaId, ...(excludeCartId ? { id: { not: excludeCartId } } : {}) },
+        orderBy: { createdAt: "asc" },
+        include: { items: true },
+      }),
     findDetail: (id) =>
       prisma.crashCart.findUnique({
         where: { id },
