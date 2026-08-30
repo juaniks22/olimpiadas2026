@@ -5,14 +5,29 @@ const { toCsv } = require("../../utils/csv");
 const { buildSimplePdf } = require("../../utils/pdf");
 const repo = require("./reports.repository");
 
+// El hospital opera en horario de Argentina (UTC-3). Los filtros de fecha que
+// llegan del front son días "pelados" (YYYY-MM-DD) elegidos en calendario local.
+// Si se los pasa tal cual a `new Date(...)`, JS los interpreta como medianoche
+// UTC (no medianoche ART), y el fin de día se calculaba con setHours() usando
+// la zona horaria del proceso Node (UTC en Railway). Eso desfasaba la ventana
+// de filtrado ~3hs contra el día calendario real, colando/perdiendo llamados
+// cercanos a la medianoche local. Se fija el offset explícitamente.
+const ARGENTINA_OFFSET = "-03:00";
+
 function parseFilterDate(val, field, isEndOfDay = false) {
   if (!val) return undefined;
-  const parsed = parseDate(val, field);
-  if (!parsed) return undefined;
-  if (isEndOfDay && typeof val === "string" && val.length === 10) {
-    parsed.setHours(23, 59, 59, 999);
+  if (typeof val === "string" && val.length === 10) {
+    // Fecha-solo (YYYY-MM-DD): se ancla al día calendario de Argentina, no al del servidor.
+    const time = isEndOfDay ? "23:59:59.999" : "00:00:00.000";
+    const parsed = new Date(`${val}T${time}${ARGENTINA_OFFSET}`);
+    if (Number.isNaN(parsed.getTime())) {
+      // Reutiliza el mensaje de error estándar del validador.
+      return parseDate(val, field);
+    }
+    return parsed;
   }
-  return parsed;
+  // Fecha con hora/timestamp explícito: se respeta tal cual la mandaron.
+  return parseDate(val, field);
 }
 
 function parseFilters(query = {}) {

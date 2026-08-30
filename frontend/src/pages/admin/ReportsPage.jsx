@@ -580,7 +580,7 @@ export default function ReportsPage() {
             <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Por página:</span>
             <select
               className="select"
-              style={{ width: 'auto', padding: '6px 12px', fontSize: '0.8125rem' }}
+              style={{ width: 'auto', minWidth: '68px', padding: '6px 32px 6px 12px', fontSize: '0.8125rem', backgroundSize: '14px', backgroundPosition: 'right 10px center' }}
               value={pageSize}
               onChange={(e) => {
                 setPageSize(Number(e.target.value));
