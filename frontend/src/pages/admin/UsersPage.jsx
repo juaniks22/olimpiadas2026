@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../App';
-import PasswordInput from '../../components/PasswordInput';
 
 // El backend responde los errores como { error: { message, details } }.
 async function readError(res, fallback) {
@@ -136,18 +135,9 @@ export default function UsersPage() {
                         {u.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-<<<<<<< HEAD
                     <td className="text-center">
-                      <button
-                        className={`btn btn-sm ${u.isActive ? 'btn-danger' : 'btn-primary'}`}
-                        onClick={() => handleToggleActive(u)}
-                      >
-                        {u.isActive ? 'Desactivar' : 'Activar'}
-=======
-                    <td>
                       <button className="btn btn-sm btn-secondary" onClick={() => setManageUser(u)}>
                         Gestionar
->>>>>>> d24d77e3e4ce85ee3afc410217325259a00e7314
                       </button>
                     </td>
                   </tr>
@@ -166,61 +156,12 @@ export default function UsersPage() {
         />
       )}
 
-<<<<<<< HEAD
-            <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-                <div className="input-group">
-                  <label htmlFor="user-username">Nombre de usuario</label>
-                  <input
-                    id="user-username"
-                    className="input"
-                    type="text"
-                    placeholder="Ej. jpiso"
-                    value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="input-group">
-                  <label htmlFor="user-password">Contraseña</label>
-                  <PasswordInput
-                    id="user-password"
-                    placeholder="8-12 caract., mayús, minús, num, símbolo"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    required
-                    minLength={8}
-                    maxLength={12}
-                  />
-                </div>
-                <div className="input-group">
-                  <label htmlFor="user-role">Rol</label>
-                  <select
-                    id="user-role"
-                    className="input"
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  >
-                    <option value="GENERIC">Genérico (Jefe de Piso)</option>
-                    <option value="ADMIN">Administrador</option>
-                  </select>
-                </div>
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button id="btn-save-user" type="submit" className="btn btn-primary">Crear cuenta</button>
-              </div>
-            </form>
-          </div>
-        </div>
-=======
       {manageUser && (
         <ManageUserModal
           user={manageUser} token={token} API_URL={API_URL}
           onClose={() => setManageUser(null)}
           onChanged={fetchUsers}
         />
->>>>>>> d24d77e3e4ce85ee3afc410217325259a00e7314
       )}
     </>
   );
@@ -244,7 +185,7 @@ function CreateUserModal({ token, API_URL, onClose, onCreated }) {
       if (!res.ok) return setError(await readError(res, 'No se pudo generar la clave'));
       const data = await res.json();
       setPassword(data.password || '');
-      setShowPassword(true); // mostrarla para que el Admin la copie
+      setShowPassword(true);
     } catch {
       setError('Error de conexión');
     }
@@ -346,7 +287,6 @@ function ManageUserModal({ user, token, API_URL, onClose, onChanged }) {
   const hasNewPass = newPass.length > 0;
   const dirty = usernameChanged || hasNewPass;
 
-  // Un solo Guardar: aplica lo que haya cambiado (nombre de usuario y/o clave).
   const handleSave = async () => {
     if (!dirty) return;
     if (hasNewPass && (newPass.length < 8 || newPass.length > 12)) {
