@@ -51,8 +51,13 @@ async function create(body) {
 }
 
 // Actualiza parcialmente los datos básicos de la cuenta (ej. username), validando duplicados.
+// La cuenta Administradora solo admite cambio de contraseña, nunca de username ni estado.
 async function update(id, body) {
-  await getById(id);
+  const user = await repo.findById(id);
+  if (!user) throw new AppError(404, "Cuenta no encontrada");
+  if (user.role === "ADMIN") {
+    throw new AppError(400, "La cuenta Administradora solo permite cambiar la contraseña");
+  }
   const data = {};
   if (body.username !== undefined) {
     const clash = await repo.findByUsername(body.username);
@@ -61,6 +66,25 @@ async function update(id, body) {
   }
   if (!Object.keys(data).length) throw new AppError(400, "Nada para actualizar");
   return repo.update(id, data);
+}
+
+// Elimina una cuenta GENERIC. Bloquea la Administradora y las cuentas con llamados cargados.
+async function remove(id) {
+  const user = await repo.findById(id);
+  if (!user) throw new AppError(404, "Cuenta no encontrada");
+  if (user.role === "ADMIN") {
+    throw new AppError(400, "No se puede eliminar la cuenta Administradora");
+  }
+  const calls = await repo.countCalls(id);
+  if (calls > 0) {
+    throw new AppError(
+      409,
+      "No se puede eliminar: la cuenta tiene llamados cargados. Desactivala en su lugar.",
+      { calls }
+    );
+  }
+  await repo.remove(id);
+  return { ok: true };
 }
 
 // Cambia el estado de activación de una cuenta (alta/baja lógica).
@@ -86,4 +110,4 @@ function suggestPassword() {
   return { password: password.generate() };
 }
 
-module.exports = { list, getById, create, update, setActive, resetPassword, suggestPassword };
+module.exports = { list, getById, create, update, remove, setActive, resetPassword, suggestPassword };
