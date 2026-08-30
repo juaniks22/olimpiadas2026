@@ -44,4 +44,28 @@ function parseDate(value, field) {
   return date;
 }
 
-module.exports = { fail, ensure, requireFields, isEnum, parseBool, parseDate };
+// El Jefe de Piso carga un evento que ya ocurrió y ya está firmado en papel (Documento de
+// Visión, 1.1: "Flujo de carga de datos"). Ninguna fecha/hora del evento puede ser futura,
+// y como el llamado es inmutable, un error de tipeo acá queda pegado para siempre.
+function ensureNotFuture(date, field) {
+  if (date && date.getTime() > Date.now()) {
+    fail(`${field} no puede ser una fecha u hora futura`);
+  }
+}
+
+// DNI argentino real: 6 a 8 dígitos numéricos únicamente.
+const DNI_PATTERN = /^\d{6,8}$/;
+function ensureValidDni(value, field) {
+  ensure(DNI_PATTERN.test(String(value).trim()), `${field} debe tener entre 6 y 8 dígitos numéricos`);
+}
+
+module.exports = {
+  fail,
+  ensure,
+  requireFields,
+  isEnum,
+  parseBool,
+  parseDate,
+  ensureNotFuture,
+  ensureValidDni,
+};

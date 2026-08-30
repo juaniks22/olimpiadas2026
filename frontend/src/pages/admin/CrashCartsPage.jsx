@@ -564,8 +564,8 @@ function CartStockEditor({ items, busy, qtyDraft, onQtyChange, onLoadDefault, on
                     <input
                       className="input"
                       type="number"
-                      min={0}
-                      style={{ width: 70, textAlign: 'center', ...(changed ? { borderColor: '#F59E0B' } : {}) }}
+                      min={0} max={9999}
+                      style={{ width: 88, textAlign: 'right', paddingRight: 6, ...(changed ? { borderColor: '#F59E0B' } : {}) }}
                       value={draft}
                       onChange={(e) => onQtyChange(it.id, e.target.value)}
                     />
@@ -596,7 +596,7 @@ function CartStockEditor({ items, busy, qtyDraft, onQtyChange, onLoadDefault, on
           </div>
           <div className="input-group" style={{ margin: 0 }}>
             <label>Cantidad</label>
-            <input className="input" type="number" min={0} style={{ width: 80 }} value={newItem.standardQuantity} onChange={(e) => setNewItem({ ...newItem, standardQuantity: e.target.value })} />
+            <input className="input" type="number" min={0} max={9999} style={{ width: 96, textAlign: 'right', paddingRight: 6 }} value={newItem.standardQuantity} onChange={(e) => setNewItem({ ...newItem, standardQuantity: e.target.value })} />
           </div>
           <div className="input-group" style={{ margin: 0 }}>
             <label>Unidad</label>

@@ -31,7 +31,16 @@ export default function StaffPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    
+
+    if (!/^\d{6,8}$/.test(form.dni.trim())) {
+      setErrorMsg('El DNI debe tener entre 6 y 8 dígitos numéricos.');
+      return;
+    }
+    if (form.name.trim().length === 0 || form.name.trim().length > 30) {
+      setErrorMsg('El nombre debe tener entre 1 y 30 caracteres.');
+      return;
+    }
+
     // Convert empty strings to null/undefined or simply pass them, backend accepts null for optional fields
     const body = {
       dni: form.dni,
@@ -190,26 +199,29 @@ export default function StaffPage() {
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
                 <div className="input-group">
-                  <label htmlFor="staff-dni">DNI</label>
+                  <label htmlFor="staff-dni">DNI (6 a 8 dígitos)</label>
                   <input
                     id="staff-dni"
                     className="input"
                     type="text"
+                    inputMode="numeric"
+                    maxLength={8}
                     placeholder="Documento único"
                     value={form.dni}
-                    onChange={(e) => setForm({ ...form, dni: e.target.value })}
+                    onChange={(e) => setForm({ ...form, dni: e.target.value.replace(/\D/g, '').slice(0, 8) })}
                     required
                   />
                 </div>
                 <div className="input-group">
-                  <label htmlFor="staff-name">Nombre completo</label>
+                  <label htmlFor="staff-name">Nombre completo (máx. 30 caracteres)</label>
                   <input
                     id="staff-name"
                     className="input"
                     type="text"
+                    maxLength={30}
                     placeholder="Ej. Juan Pérez"
                     value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    onChange={(e) => setForm({ ...form, name: e.target.value.slice(0, 30) })}
                     required
                   />
                 </div>

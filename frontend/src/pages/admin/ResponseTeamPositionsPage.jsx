@@ -32,6 +32,11 @@ export default function ResponseTeamPositionsPage() {
     e.preventDefault();
     setErrorMsg('');
 
+    if (form.name.trim().length === 0 || form.name.trim().length > 30) {
+      setErrorMsg('El nombre de la posición debe tener entre 1 y 30 caracteres.');
+      return;
+    }
+
     try {
       const method = editingId ? 'PATCH' : 'POST';
       const url = editingId 
@@ -171,14 +176,15 @@ export default function ResponseTeamPositionsPage() {
             <form onSubmit={handleSubmit}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
                 <div className="input-group">
-                  <label htmlFor="pos-name">Nombre de la Posición</label>
+                  <label htmlFor="pos-name">Nombre de la Posición (máx. 30 caracteres)</label>
                   <input
                     id="pos-name"
                     className="input"
                     type="text"
+                    maxLength={30}
                     placeholder="Ej. Vía Aérea, Líder"
                     value={form.name}
-                    onChange={(e) => setForm({ name: e.target.value })}
+                    onChange={(e) => setForm({ name: e.target.value.slice(0, 30) })}
                     required
                   />
                 </div>

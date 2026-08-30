@@ -19,6 +19,9 @@ const {
 function assertNonNegativeInt(value, field) {
   const n = Number(value);
   if (!Number.isInteger(n) || n < 0) throw new AppError(400, `${field} debe ser un entero >= 0`);
+  // Tope de stock por ítem: 9999 unidades. Sin esto, la UI ("2/3 frascos") y las
+  // columnas numéricas quedan pensadas para valores de hasta 4 cifras.
+  if (n > 9999) throw new AppError(400, `${field} no puede superar 9999 unidades`);
   return n;
 }
 

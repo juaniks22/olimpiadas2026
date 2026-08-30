@@ -8,7 +8,7 @@
 //    + crashCartConsumptions. Todo o nada.
 //  - Cualquier consumo del carro lo deja OUT_OF_SERVICE (lo ejecuta el repository dentro de la tx).
 const AppError = require("../../utils/AppError");
-const { requireFields, ensure, isEnum, parseDate } = require("../../utils/validate");
+const { requireFields, ensure, isEnum, parseDate, ensureNotFuture, ensureValidDni } = require("../../utils/validate");
 const repo = require("./calls.repository");
 const areasRepo = require("../areas/areas.repository");
 const rtRepo = require("../responseTeam/responseTeam.repository");
@@ -26,6 +26,7 @@ function buildEventForm(input) {
   );
   if (input.patientIdentificationType === "DNI") {
     ensure(!!input.patientDni, "patientDni es obligatorio cuando la identificación es DNI");
+    ensureValidDni(input.patientDni, "patientDni");
   }
   if (input.patientIdentificationType === "TEMPORARY_ID") {
     ensure(
@@ -34,20 +35,66 @@ function buildEventForm(input) {
     );
   }
 
+  // Edad y fecha de ingreso son parte de la ficha del paciente (CP-2 / CU-09) y no
+  // tiene sentido dejarlas vacías aunque el paciente sea NN: la edad se estima y la
+  // fecha de ingreso institucional siempre existe (es cuando se abrió el llamado).
+  ensure(
+    input.patientAge !== undefined && input.patientAge !== null && input.patientAge !== "",
+    "patientAge es obligatorio"
+  );
+  const patientAge = Number(input.patientAge);
+  ensure(Number.isInteger(patientAge) && patientAge >= 0 && patientAge <= 150, "patientAge debe ser un entero entre 0 y 150");
+
+  ensure(
+    input.admissionDate !== undefined && input.admissionDate !== null && input.admissionDate !== "",
+    "admissionDate es obligatorio"
+  );
+
+  const admissionDate = parseDate(input.admissionDate, "admissionDate") ?? null;
+  const callReceivedAt = parseDate(input.callReceivedAt, "callReceivedAt") ?? null;
+  const teamArrivalAt = parseDate(input.teamArrivalAt, "teamArrivalAt") ?? null;
+  const cprStartedAt = parseDate(input.cprStartedAt, "cprStartedAt") ?? null;
+  const returnOfSpontaneousCirculationAt =
+    parseDate(input.returnOfSpontaneousCirculationAt, "returnOfSpontaneousCirculationAt") ?? null;
+  const eventEndedAt = parseDate(input.eventEndedAt, "eventEndedAt") ?? null;
+
+  // El evento ya ocurrió y ya fue firmado en papel: ninguna de estas fechas puede ser futura.
+  ensureNotFuture(admissionDate, "admissionDate");
+  ensureNotFuture(callReceivedAt, "callReceivedAt");
+  ensureNotFuture(teamArrivalAt, "teamArrivalAt");
+  ensureNotFuture(cprStartedAt, "cprStartedAt");
+  ensureNotFuture(returnOfSpontaneousCirculationAt, "returnOfSpontaneousCirculationAt");
+  ensureNotFuture(eventEndedAt, "eventEndedAt");
+
+  // Orden lógico de la cronología (defensa de datos además de la que ya hace el frontend,
+  // porque el llamado es inmutable una vez creado).
+  const ordered = [
+    ["callReceivedAt", callReceivedAt],
+    ["teamArrivalAt", teamArrivalAt],
+    ["cprStartedAt", cprStartedAt],
+    ["returnOfSpontaneousCirculationAt", returnOfSpontaneousCirculationAt],
+    ["eventEndedAt", eventEndedAt],
+  ].filter(([, d]) => d);
+  for (let i = 0; i < ordered.length - 1; i++) {
+    ensure(
+      ordered[i][1].getTime() <= ordered[i + 1][1].getTime(),
+      `${ordered[i + 1][0]} no puede ser anterior a ${ordered[i][0]}`
+    );
+  }
+
   return {
     patientIdentificationType: input.patientIdentificationType,
     patientDni: input.patientDni ?? null,
     patientTemporaryId: input.patientTemporaryId ?? null,
     patientSex: input.patientSex ?? null,
-    patientAge: input.patientAge ?? null,
-    admissionDate: parseDate(input.admissionDate, "admissionDate") ?? null,
+    patientAge,
+    admissionDate,
     timeSinceDiscoveryMinutes: input.timeSinceDiscoveryMinutes ?? null,
-    callReceivedAt: parseDate(input.callReceivedAt, "callReceivedAt") ?? null,
-    teamArrivalAt: parseDate(input.teamArrivalAt, "teamArrivalAt") ?? null,
-    cprStartedAt: parseDate(input.cprStartedAt, "cprStartedAt") ?? null,
-    returnOfSpontaneousCirculationAt:
-      parseDate(input.returnOfSpontaneousCirculationAt, "returnOfSpontaneousCirculationAt") ?? null,
-    eventEndedAt: parseDate(input.eventEndedAt, "eventEndedAt") ?? null,
+    callReceivedAt,
+    teamArrivalAt,
+    cprStartedAt,
+    returnOfSpontaneousCirculationAt,
+    eventEndedAt,
     airwayManagement: input.airwayManagement ?? null,
     venousAccess: input.venousAccess ?? null,
     postResuscitationStatus: input.postResuscitationStatus ?? null,
@@ -61,6 +108,7 @@ function normalizeDefibrillations(list) {
     ensure(Number.isInteger(d.sequenceNumber), `defibrillations[${i}].sequenceNumber debe ser entero`);
     const performedAt = parseDate(d.performedAt, `defibrillations[${i}].performedAt`);
     ensure(!!performedAt, `defibrillations[${i}].performedAt es obligatorio`);
+    ensureNotFuture(performedAt, `defibrillations[${i}].performedAt`);
     return {
       sequenceNumber: d.sequenceNumber,
       performedAt,
@@ -77,6 +125,7 @@ function normalizeDrugs(list) {
     ensure(!!d.unit, `drugsAdministered[${i}].unit es obligatorio`);
     const administeredAt = parseDate(d.administeredAt, `drugsAdministered[${i}].administeredAt`);
     ensure(!!administeredAt, `drugsAdministered[${i}].administeredAt es obligatorio`);
+    ensureNotFuture(administeredAt, `drugsAdministered[${i}].administeredAt`);
     return {
       drugName: d.drugName,
       dose: d.dose,
@@ -168,6 +217,22 @@ async function create(user, body) {
     if (!(await cartsRepo.carts.findById(eventForm.crashCartId))) {
       throw new AppError(404, "El carro de paro indicado no existe");
     }
+  }
+
+  // CU-10 (Asignar Equipo de Respuesta) es una inclusión OBLIGATORIA de CU-07
+  // (Documento de Análisis y Diseño, 4.4: "CU-07 incluye CU-08 y CU-10"). No es opcional.
+  ensure(
+    teamAssignments.length > 0,
+    "Debe asignarse al menos un integrante del equipo de respuesta (CU-10 es obligatorio)"
+  );
+
+  // El cálculo de tiempo promedio de respuesta (CP-6, CU-13) depende de la cronología del
+  // evento. En un llamado de Emergencia (Código Azul) los hitos que anclan ese cálculo no
+  // pueden quedar vacíos, o el formulario Utstein (CP-5) pierde su propósito.
+  if (body.type === "EMERGENCY") {
+    ensure(!!eventForm.callReceivedAt, "callReceivedAt es obligatorio en un llamado de Emergencia");
+    ensure(!!eventForm.teamArrivalAt, "teamArrivalAt es obligatorio en un llamado de Emergencia");
+    ensure(!!eventForm.eventEndedAt, "eventEndedAt es obligatorio en un llamado de Emergencia");
   }
 
   return repo.createGraph({

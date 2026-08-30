@@ -21,72 +21,78 @@ const errorBoxStyle = {
   whiteSpace: 'pre-line',
 };
 
-export default function AreasPage() {
+const successBoxStyle = {
+  ...errorBoxStyle,
+  background: 'rgba(34,197,94,0.12)',
+  color: '#16A34A',
+};
+
+// Caja para mostrar una contraseña recién generada: se ve una sola vez, así que
+// se resalta bien y se puede copiar directo.
+function GeneratedPasswordBox({ password }) {
+  const [copied, setCopied] = useState(false);
+  if (!password) return null;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Si el navegador no permite clipboard, el usuario igual puede seleccionar el texto a mano.
+    }
+  };
+  return (
+    <div style={successBoxStyle}>
+      <div style={{ marginBottom: 6 }}>Contraseña generada — guardala ahora, no se vuelve a mostrar:</div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <code style={{ fontSize: '1rem', fontWeight: 700, userSelect: 'all' }}>{password}</code>
+        <button type="button" className="btn btn-sm btn-secondary" onClick={copy}>
+          {copied ? 'Copiado ✓' : 'Copiar'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function UsersPage() {
   const { token, API_URL } = useContext(AuthContext);
-  const [areas, setAreas] = useState([]);
+  const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState('');
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [createName, setCreateName] = useState('');
-  const [createError, setCreateError] = useState('');
-  const [creating, setCreating] = useState(false);
+  const [manageUser, setManageUser] = useState(null);
 
-  const [manageArea, setManageArea] = useState(null);
-
-  const fetchAreas = useCallback(async () => {
+  const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/areas`, {
+      const res = await fetch(`${API_URL}/api/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setAreas(Array.isArray(data) ? data : data.data || []);
+        setUsers(Array.isArray(data) ? data : data.data || []);
         setListError('');
       } else {
-        setListError(await readError(res, 'No se pudieron cargar las áreas'));
+        setListError(await readError(res, 'No se pudieron cargar las cuentas'));
       }
     } catch (err) {
-      console.error('Error fetching areas:', err);
-      setListError('Error de conexión al cargar las áreas');
+      console.error('Error fetching users:', err);
+      setListError('Error de conexión al cargar las cuentas');
     } finally {
       setLoading(false);
     }
   }, [API_URL, token]);
 
-  useEffect(() => { fetchAreas(); }, [fetchAreas]);
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    setCreateError('');
-    setCreating(true);
-    try {
-      const res = await fetch(`${API_URL}/api/areas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: createName.trim() }),
-      });
-      if (!res.ok) {
-        setCreateError(await readError(res, 'No se pudo crear el área'));
-        return;
-      }
-      setCreateOpen(false);
-      setCreateName('');
-      fetchAreas();
-    } catch (err) {
-      console.error('Error creating area:', err);
-      setCreateError('Error de conexión');
-    } finally {
-      setCreating(false);
-    }
-  };
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
   return (
     <>
       <div className="page-header">
-        <h2>Gestión de Áreas</h2>
-        <button id="btn-create-area" className="btn btn-primary" onClick={() => { setCreateName(''); setCreateError(''); setCreateOpen(true); }}>
-          + Nueva Área
+        <h2>Gestión de Cuentas</h2>
+        <button id="btn-create-user" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
+          + Nueva Cuenta
         </button>
       </div>
 
@@ -97,28 +103,34 @@ export default function AreasPage() {
           <table>
             <thead>
               <tr>
-                <th>Nombre</th>
+                <th>Usuario</th>
+                <th className="text-center">Rol</th>
                 <th className="text-center">Estado</th>
                 <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Cargando...</td></tr>
-              ) : areas.length === 0 ? (
-                <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>No hay áreas registradas</td></tr>
+                <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Cargando...</td></tr>
+              ) : users.length === 0 ? (
+                <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>No hay cuentas registradas</td></tr>
               ) : (
-                areas.map((area) => (
-                  <tr key={area.id}>
-                    <td style={{ fontWeight: 600 }}>{area.name}</td>
+                users.map((u) => (
+                  <tr key={u.id}>
+                    <td style={{ fontWeight: 600 }}>{u.username}</td>
                     <td className="text-center">
-                      <span className={`badge ${area.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        <span className={`status-dot ${area.isActive ? 'active' : 'inactive'}`}></span>
-                        {area.isActive ? 'Activa' : 'Inactiva'}
+                      <span className={`badge ${u.role === 'ADMIN' ? 'badge-info' : 'badge-warning'}`}>
+                        {u.role === 'ADMIN' ? 'Administrador' : 'Genérico (Jefe de Piso)'}
                       </span>
                     </td>
                     <td className="text-center">
-                      <button className="btn btn-sm btn-secondary" onClick={() => setManageArea(area)}>
+                      <span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
+                        <span className={`status-dot ${u.isActive ? 'active' : 'inactive'}`}></span>
+                        {u.isActive ? 'Activa' : 'Inactiva'}
+                      </span>
+                    </td>
+                    <td className="text-center">
+                      <button className="btn btn-sm btn-secondary" onClick={() => setManageUser(u)}>
                         Gestionar
                       </button>
                     </td>
@@ -131,44 +143,22 @@ export default function AreasPage() {
       </div>
 
       {createOpen && (
-        <div className="modal-overlay" onClick={() => setCreateOpen(false)}>
-          <div className="modal slide-up" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Nueva Área</h2>
-              <button className="btn-icon" onClick={() => setCreateOpen(false)}>✕</button>
-            </div>
-            {createError && <div style={errorBoxStyle}>{createError}</div>}
-            <form onSubmit={handleCreate}>
-              <div className="input-group">
-                <label htmlFor="area-name">Nombre del Área</label>
-                <input
-                  id="area-name"
-                  className="input"
-                  type="text"
-                  placeholder="Ej. Terapia Intensiva"
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setCreateOpen(false)}>Cancelar</button>
-                <button id="btn-save-area" type="submit" className="btn btn-primary" disabled={creating}>
-                  {creating ? 'Creando...' : 'Crear área'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {manageArea && (
-        <ManageAreaModal
-          area={manageArea}
+        <CreateUserModal
           token={token}
           API_URL={API_URL}
-          onClose={() => setManageArea(null)}
-          onChanged={fetchAreas}
+          authHeaders={authHeaders}
+          onClose={() => setCreateOpen(false)}
+          onCreated={fetchUsers}
+        />
+      )}
+
+      {manageUser && (
+        <ManageUserModal
+          user={manageUser}
+          API_URL={API_URL}
+          authHeaders={authHeaders}
+          onClose={() => setManageUser(null)}
+          onChanged={fetchUsers}
         />
       )}
     </>
@@ -176,349 +166,357 @@ export default function AreasPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Modal de gestión de un área: nombre, estado (activar/desactivar), eliminar,
-// y gestión del stock (composición estándar) del carro de paro del área.
+// Modal de creación. El rol siempre queda GENERIC (el backend lo fuerza igual,
+// no existe forma de crear otro Administrador desde acá).
 // ---------------------------------------------------------------------------
-function ManageAreaModal({ area, token, API_URL, onClose, onChanged }) {
-  const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+function CreateUserModal({ API_URL, authHeaders, onClose, onCreated }) {
+  const [username, setUsername] = useState('');
+  const [autoPassword, setAutoPassword] = useState(true);
+  const [manualPassword, setManualPassword] = useState('');
+  const [showManualPassword, setShowManualPassword] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [createdUsername, setCreatedUsername] = useState('');
 
-  const [name, setName] = useState(area.name);
-  const [isActive, setIsActive] = useState(area.isActive);
-  const [msg, setMsg] = useState('');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const [carts, setCarts] = useState(null); // null = cargando
-  const [qtyDraft, setQtyDraft] = useState({}); // { [itemId]: valorEditado } — se guarda todo junto
-
-  const flash = (m) => { setMsg(m); setErr(''); };
-  const fail = (m) => { setErr(m); setMsg(''); };
-
-  const loadCarts = useCallback(async () => {
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setError('');
+    setCreating(true);
     try {
-      const res = await fetch(`${API_URL}/api/crash-carts?areaId=${area.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const body = autoPassword
+        ? { username: username.trim(), generatePassword: true }
+        : { username: username.trim(), password: manualPassword };
+
+      const res = await fetch(`${API_URL}/api/users`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify(body),
       });
-      const list = res.ok ? await res.json() : [];
-      // Traer el detalle (composición) de cada carro.
-      const detailed = await Promise.all(
-        (Array.isArray(list) ? list : []).map(async (c) => {
-          const d = await fetch(`${API_URL}/api/crash-carts/${c.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          return d.ok ? d.json() : c;
-        })
-      );
-      setCarts(detailed);
-      setQtyDraft({}); // datos frescos → limpiar borradores
-    } catch (e) {
-      console.error(e);
-      setCarts([]);
-      fail('Error al cargar los carros del área');
+      if (!res.ok) {
+        setError(await readError(res, 'No se pudo crear la cuenta'));
+        return;
+      }
+      const data = await res.json();
+      setCreatedUsername(data.username);
+      if (data.generatedPassword) setGeneratedPassword(data.generatedPassword);
+      onCreated();
+      if (!data.generatedPassword) onClose();
+    } catch (err) {
+      console.error('Error creating user:', err);
+      setError('Error de conexión');
+    } finally {
+      setCreating(false);
     }
-  }, [API_URL, token, area.id]);
-
-  // Ítems cuya cantidad estándar fue editada y todavía no se guardó.
-  const pendingQty = (carts || []).flatMap((cart) => cart.items || []).filter(
-    (it) => qtyDraft[it.id] !== undefined && String(qtyDraft[it.id]) !== String(it.standardQuantity)
-  );
-
-  const saveAllQty = async () => {
-    if (!pendingQty.length) return;
-    setBusy(true);
-    try {
-      for (const it of pendingQty) {
-        const res = await fetch(`${API_URL}/api/crash-cart-items/${it.id}`, {
-          method: 'PATCH', headers: authHeaders,
-          body: JSON.stringify({ standardQuantity: Number(qtyDraft[it.id]) }),
-        });
-        if (!res.ok) return fail(await readError(res, `No se pudo guardar "${it.name}"`));
-      }
-      flash(`${pendingQty.length} cantidad(es) actualizada(s)`);
-      await loadCarts();
-    } finally { setBusy(false); }
   };
 
-  useEffect(() => { loadCarts(); }, [loadCarts]);
-
-  const saveName = async () => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/areas/${area.id}`, {
-        method: 'PATCH', headers: authHeaders, body: JSON.stringify({ name: name.trim() }),
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo guardar el nombre'));
-      flash('Nombre actualizado');
-      onChanged();
-    } finally { setBusy(false); }
-  };
-
-  const toggleStatus = async () => {
-    setBusy(true);
-    try {
-      let res;
-      if (isActive) {
-        res = await fetch(`${API_URL}/api/areas/${area.id}/deactivate`, { method: 'POST', headers: authHeaders });
-      } else {
-        res = await fetch(`${API_URL}/api/areas/${area.id}`, { method: 'PATCH', headers: authHeaders, body: JSON.stringify({ isActive: true }) });
-      }
-      if (!res.ok) return fail(await readError(res, 'No se pudo cambiar el estado'));
-      setIsActive(!isActive);
-      flash(isActive ? 'Área desactivada' : 'Área reactivada');
-      onChanged();
-    } finally { setBusy(false); }
-  };
-
-  const removeArea = async () => {
-    if (!confirm(`¿Eliminar definitivamente el área "${area.name}"?\n\nSolo se puede si no tiene llamados ni carros de paro asociados. No se puede deshacer.`)) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/areas/${area.id}`, { method: 'DELETE', headers: authHeaders });
-      if (!res.ok) return fail(await readError(res, 'No se pudo eliminar el área'));
-      onChanged();
-      onClose();
-    } finally { setBusy(false); }
-  };
-
-  // Todo carro nace con la composición estándar (el backend la siembra siempre).
-  // Solo se usa como recuperación si un área quedó sin carro.
-  const createStandardCart = async () => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-carts`, {
-        method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ name: `Carro - ${area.name}`, areaId: area.id }),
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo crear el carro'));
-      flash('Carro creado con la composición estándar (28 medicamentos)');
-      await loadCarts();
-    } finally { setBusy(false); }
-  };
-
-  const loadDefault = async (cartId) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-carts/${cartId}/load-default-composition`, { method: 'POST', headers: authHeaders });
-      if (!res.ok) return fail(await readError(res, 'No se pudo cargar la composición estándar'));
-      flash('Composición estándar cargada (28 medicamentos)');
-      await loadCarts();
-    } finally { setBusy(false); }
-  };
-
-  const reactivateCart = async (cartId) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-carts/${cartId}/reactivate`, { method: 'POST', headers: authHeaders });
-      if (!res.ok) return fail(await readError(res, 'No se pudo reactivar el carro'));
-      flash('Carro reactivado (En operación)');
-      await loadCarts();
-    } finally { setBusy(false); }
-  };
-
-  const removeItem = async (itemId) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-cart-items/${itemId}`, { method: 'DELETE', headers: authHeaders });
-      if (!res.ok) return fail(await readError(res, 'No se pudo quitar el ítem'));
-      flash('Ítem quitado');
-      await loadCarts();
-    } finally { setBusy(false); }
-  };
-
-  const addItem = async (cartId, item) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-cart-items`, {
-        method: 'POST', headers: authHeaders,
-        body: JSON.stringify({
-          crashCartId: cartId,
-          name: item.name.trim(),
-          standardQuantity: Number(item.standardQuantity) || 1,
-          unit: item.unit.trim() || null,
-        }),
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo agregar el ítem'));
-      flash('Ítem agregado');
-      await loadCarts();
-      return true;
-    } finally { setBusy(false); }
-  };
+  // Si ya se creó la cuenta y hubo contraseña generada, mostramos el resultado
+  // en vez del formulario, para que se pueda copiar antes de cerrar.
+  if (generatedPassword) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal slide-up" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>Cuenta creada</h2>
+            <button className="btn-icon" onClick={onClose}>✕</button>
+          </div>
+          <p>Usuario: <strong>{createdUsername}</strong></p>
+          <GeneratedPasswordBox password={generatedPassword} />
+          <div className="modal-actions">
+            <button className="btn btn-primary" onClick={onClose}>Listo</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720, width: '95%' }}>
+      <div className="modal slide-up" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Gestionar área: {area.name}</h2>
+          <h2>Nueva Cuenta (Jefe de Piso)</h2>
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
-
-        {msg && <div style={{ ...errorBoxStyle, background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>{msg}</div>}
-        {err && <div style={errorBoxStyle}>{err}</div>}
-
-        {/* --- Datos y estado --- */}
-        <section style={{ marginBottom: 20 }}>
-          <h3 style={{ marginBottom: 8 }}>Datos del área</h3>
+        {error && <div style={errorBoxStyle}>{error}</div>}
+        <form onSubmit={handleCreate}>
           <div className="input-group">
-            <label htmlFor="mng-area-name">Nombre</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input id="mng-area-name" className="input" value={name} onChange={(e) => setName(e.target.value)} />
-              <button className="btn btn-secondary" onClick={saveName} disabled={busy || name.trim() === area.name}>Guardar</button>
-            </div>
+            <label htmlFor="new-user-username">Nombre de usuario</label>
+            <input
+              id="new-user-username"
+              className="input"
+              type="text"
+              placeholder="Ej. jperez"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-            <span className={`badge ${isActive ? 'badge-success' : 'badge-danger'}`}>
-              <span className={`status-dot ${isActive ? 'active' : 'inactive'}`}></span>
-              {isActive ? 'Activa' : 'Inactiva'}
-            </span>
-            <button className={`btn btn-sm ${isActive ? 'btn-secondary' : 'btn-primary'}`} onClick={toggleStatus} disabled={busy}>
-              {isActive ? 'Desactivar área' : 'Reactivar área'}
-            </button>
-            <button className="btn btn-sm btn-danger" onClick={removeArea} disabled={busy}>Eliminar área</button>
-          </div>
-        </section>
 
-        {/* --- Stock del carro de paro --- */}
-        <section>
-          <h3 style={{ marginBottom: 8 }}>Carro de paro del área</h3>
-          {carts === null ? (
-            <p style={{ color: 'var(--text-tertiary)' }}>Cargando...</p>
-          ) : carts.length === 0 ? (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ color: 'var(--text-tertiary)' }}>
-                Esta área no tiene carro de paro (dato viejo: las áreas nuevas ya se crean con uno).
-              </span>
-              <button className="btn btn-primary" onClick={createStandardCart} disabled={busy}>
-                Crear carro estándar (28 medicamentos)
-              </button>
-            </div>
-          ) : (
-            carts.map((cart) => (
-              <CartStockEditor
-                key={cart.id}
-                cart={cart}
-                busy={busy}
-                qtyDraft={qtyDraft}
-                onQtyChange={(itemId, value) => setQtyDraft((d) => ({ ...d, [itemId]: value }))}
-                onLoadDefault={() => loadDefault(cart.id)}
-                onReactivate={() => reactivateCart(cart.id)}
-                onRemoveItem={removeItem}
-                onAddItem={(item) => addItem(cart.id, item)}
+          <div className="input-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={autoPassword}
+                onChange={(e) => setAutoPassword(e.target.checked)}
               />
-            ))
-          )}
-        </section>
+              Generar contraseña segura automáticamente (recomendado)
+            </label>
+          </div>
 
-        <div className="modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>Cerrar</button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={saveAllQty}
-            disabled={busy || pendingQty.length === 0}
-          >
-            {pendingQty.length ? `Guardar (${pendingQty.length})` : 'Guardar'}
-          </button>
-        </div>
+          {!autoPassword && (
+            <div className="input-group">
+              <label htmlFor="new-user-password">Contraseña</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  id="new-user-password"
+                  className="input"
+                  type={showManualPassword ? 'text' : 'password'}
+                  placeholder="8-12 caracteres, mayúscula, minúscula, número y símbolo"
+                  value={manualPassword}
+                  onChange={(e) => setManualPassword(e.target.value)}
+                  required={!autoPassword}
+                />
+                <button type="button" className="btn btn-secondary" onClick={() => setShowManualPassword((s) => !s)}>
+                  {showManualPassword ? 'Ocultar' : 'Ver'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+            <button id="btn-save-user" type="submit" className="btn btn-primary" disabled={creating}>
+              {creating ? 'Creando...' : 'Crear cuenta'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 }
 
-function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onReactivate, onRemoveItem, onAddItem }) {
-  const items = cart.items || [];
-  const [adding, setAdding] = useState(false);
-  const [newItem, setNewItem] = useState({ name: '', standardQuantity: 1, unit: '' });
+// ---------------------------------------------------------------------------
+// Modal de gestión de una cuenta existente: cambiar nombre/contraseña,
+// activar/desactivar, eliminar. Si es la cuenta ADMIN, se bloquean acciones
+// que el backend igual rechazaría (username, desactivar, eliminar) para no
+// mostrar un error al pedo: solo queda habilitado el cambio de contraseña.
+// ---------------------------------------------------------------------------
+function ManageUserModal({ user, API_URL, authHeaders, onClose, onChanged }) {
+  const isAdmin = user.role === 'ADMIN';
 
-  const outOfService = cart.status === 'OUT_OF_SERVICE';
+  const [username, setUsername] = useState(user.username);
+  const [isActive, setIsActive] = useState(user.isActive);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const [autoPassword, setAutoPassword] = useState(true);
+  const [manualPassword, setManualPassword] = useState('');
+  const [showManualPassword, setShowManualPassword] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState('');
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const flash = (m) => { setMsg(m); setErr(''); };
+  const fail = (m) => { setErr(m); setMsg(''); };
+
+  const saveUsername = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/users/${user.id}`, {
+        method: 'PATCH', headers: authHeaders,
+        body: JSON.stringify({ username: username.trim() }),
+      });
+      if (!res.ok) return fail(await readError(res, 'No se pudo actualizar el usuario'));
+      flash('Nombre de usuario actualizado');
+      onChanged();
+    } catch (e) {
+      console.error(e);
+      fail('Error de conexión');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const savePassword = async () => {
+    setErr(''); setMsg(''); setGeneratedPassword('');
+    setBusy(true);
+    try {
+      const body = autoPassword ? { generatePassword: true } : { password: manualPassword };
+      const res = await fetch(`${API_URL}/api/users/${user.id}/reset-password`, {
+        method: 'POST', headers: authHeaders,
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) return fail(await readError(res, 'No se pudo cambiar la contraseña'));
+      const data = await res.json();
+      if (data.generatedPassword) {
+        setGeneratedPassword(data.generatedPassword);
+      } else {
+        flash('Contraseña actualizada');
+      }
+      setManualPassword('');
+    } catch (e) {
+      console.error(e);
+      fail('Error de conexión');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleStatus = async () => {
+    setBusy(true);
+    try {
+      const action = isActive ? 'deactivate' : 'reactivate';
+      const res = await fetch(`${API_URL}/api/users/${user.id}/${action}`, {
+        method: 'POST', headers: authHeaders,
+      });
+      if (!res.ok) return fail(await readError(res, 'No se pudo cambiar el estado de la cuenta'));
+      setIsActive(!isActive);
+      flash(isActive ? 'Cuenta desactivada' : 'Cuenta reactivada');
+      onChanged();
+    } catch (e) {
+      console.error(e);
+      fail('Error de conexión');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeUser = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/users/${user.id}`, {
+        method: 'DELETE', headers: authHeaders,
+      });
+      if (!res.ok) {
+        // Si tiene llamados cargados, el backend devuelve 409 y sugiere desactivar en su lugar.
+        setConfirmDelete(false);
+        return fail(await readError(res, 'No se pudo eliminar la cuenta'));
+      }
+      onChanged();
+      onClose();
+    } catch (e) {
+      console.error(e);
+      fail('Error de conexión');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
-    <div style={{ border: '1px solid var(--border, #e5e7eb)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-        <strong>{cart.name}</strong>
-        <span className={`badge ${outOfService ? 'badge-danger' : 'badge-success'}`}>
-          {outOfService ? 'Fuera de servicio' : 'En operación'}
-        </span>
-        {outOfService && (
-          <button className="btn btn-sm btn-primary" onClick={onReactivate} disabled={busy}>Reactivar carro</button>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560, width: '95%' }}>
+        <div className="modal-header">
+          <h2>Gestionar cuenta: {user.username}</h2>
+          <button className="btn-icon" onClick={onClose}>✕</button>
+        </div>
+
+        {msg && <div style={successBoxStyle}>{msg}</div>}
+        {err && <div style={errorBoxStyle}>{err}</div>}
+
+        {isAdmin && (
+          <div style={{ ...successBoxStyle, background: 'rgba(59,130,246,0.1)', color: '#3B82F6' }}>
+            Esta es la cuenta Administradora: no se puede eliminar, desactivar ni renombrar. Solo se le puede cambiar la contraseña.
+          </div>
         )}
-      </div>
 
-      {items.length === 0 ? (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ color: 'var(--text-tertiary)' }}>Sin composición cargada.</span>
-          <button className="btn btn-sm btn-primary" onClick={onLoadDefault} disabled={busy}>
-            Cargar composición estándar (28 medicamentos)
+        {/* --- Nombre de usuario --- */}
+        <section style={{ marginBottom: 20 }}>
+          <h3 style={{ marginBottom: 8 }}>Nombre de usuario</h3>
+          <div className="input-group">
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                className="input"
+                value={username}
+                disabled={isAdmin}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <button
+                className="btn btn-secondary"
+                onClick={saveUsername}
+                disabled={busy || isAdmin || username.trim() === user.username || !username.trim()}
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* --- Contraseña --- */}
+        <section style={{ marginBottom: 20 }}>
+          <h3 style={{ marginBottom: 8 }}>Cambiar contraseña</h3>
+
+          <GeneratedPasswordBox password={generatedPassword} />
+
+          <div className="input-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={autoPassword}
+                onChange={(e) => setAutoPassword(e.target.checked)}
+              />
+              Generar contraseña segura automáticamente
+            </label>
+          </div>
+
+          {!autoPassword && (
+            <div className="input-group">
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  className="input"
+                  type={showManualPassword ? 'text' : 'password'}
+                  placeholder="8-12 caracteres, mayúscula, minúscula, número y símbolo"
+                  value={manualPassword}
+                  onChange={(e) => setManualPassword(e.target.value)}
+                />
+                <button type="button" className="btn btn-secondary" onClick={() => setShowManualPassword((s) => !s)}>
+                  {showManualPassword ? 'Ocultar' : 'Ver'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button
+            className="btn btn-primary"
+            onClick={savePassword}
+            disabled={busy || (!autoPassword && !manualPassword)}
+          >
+            Guardar contraseña
           </button>
-        </div>
-      ) : (
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th style={{ width: 40, textAlign: 'right' }}>#</th>
-                <th>Ítem</th>
-                <th className="text-center" style={{ width: 120 }}>Cant. estándar</th>
-                <th className="text-center">Unidad</th>
-                <th className="text-center" style={{ width: 100 }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((it, i) => {
-                const draft = qtyDraft[it.id] ?? String(it.standardQuantity);
-                const changed = draft !== String(it.standardQuantity);
-                return (
-                <tr key={it.id}>
-                  <td style={{ textAlign: 'right', color: 'var(--text-tertiary)' }}>{i + 1}</td>
-                  <td>{it.name}</td>
-                  <td className="text-center">
-                    <input
-                      className="input input-qty"
-                      type="number"
-                      min={0}
-                      style={changed ? { borderColor: '#F59E0B' } : undefined}
-                      value={draft}
-                      onChange={(e) => onQtyChange(it.id, e.target.value)}
-                    />
-                  </td>
-                  <td className="text-center">{it.unit || '—'}</td>
-                  <td className="text-center">
-                    <button className="btn btn-sm btn-danger" onClick={() => onRemoveItem(it.id)} disabled={busy}>Quitar</button>
-                  </td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+        </section>
 
-      {adding ? (
-        <form
-          style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, alignItems: 'flex-end' }}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const ok = await onAddItem(newItem);
-            if (ok) { setNewItem({ name: '', standardQuantity: 1, unit: '' }); setAdding(false); }
-          }}
-        >
-          <div className="input-group" style={{ margin: 0 }}>
-            <label>Ítem</label>
-            <input className="input" required value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="Ej. Adrenalina" />
-          </div>
-          <div className="input-group" style={{ margin: 0 }}>
-            <label>Cantidad</label>
-            <input className="input input-qty" type="number" min={0} value={newItem.standardQuantity} onChange={(e) => setNewItem({ ...newItem, standardQuantity: e.target.value })} />
-          </div>
-          <div className="input-group" style={{ margin: 0 }}>
-            <label>Unidad</label>
-            <input className="input" style={{ width: 110 }} value={newItem.unit} onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })} placeholder="ampolla" />
-          </div>
-          <button type="submit" className="btn btn-sm btn-primary" disabled={busy}>Agregar</button>
-          <button type="button" className="btn btn-sm btn-secondary" onClick={() => setAdding(false)}>Cancelar</button>
-        </form>
-      ) : (
-        <button className="btn btn-sm btn-secondary" style={{ marginTop: 10 }} onClick={() => setAdding(true)}>+ Agregar ítem</button>
-      )}
+        {/* --- Estado y eliminación --- */}
+        {!isAdmin && (
+          <section>
+            <h3 style={{ marginBottom: 8 }}>Estado de la cuenta</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span className={`badge ${isActive ? 'badge-success' : 'badge-danger'}`}>
+                <span className={`status-dot ${isActive ? 'active' : 'inactive'}`}></span>
+                {isActive ? 'Activa' : 'Inactiva'}
+              </span>
+              <button className={`btn btn-sm ${isActive ? 'btn-secondary' : 'btn-primary'}`} onClick={toggleStatus} disabled={busy}>
+                {isActive ? 'Desactivar cuenta' : 'Reactivar cuenta'}
+              </button>
+
+              {!confirmDelete ? (
+                <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete(true)} disabled={busy}>
+                  Eliminar cuenta
+                </button>
+              ) : (
+                <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.875rem' }}>¿Seguro? No se puede deshacer.</span>
+                  <button className="btn btn-sm btn-danger" onClick={removeUser} disabled={busy}>Sí, eliminar</button>
+                  <button className="btn btn-sm btn-secondary" onClick={() => setConfirmDelete(false)} disabled={busy}>Cancelar</button>
+                </span>
+              )}
+            </div>
+          </section>
+        )}
+
+        <div className="modal-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cerrar</button>
+        </div>
+      </div>
     </div>
   );
 }

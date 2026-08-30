@@ -14,6 +14,12 @@ function toLocalDatetime(d) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+// Tope para los inputs datetime-local: el evento ya ocurrió y ya está firmado en
+// papel, así que ninguna fecha/hora puede ser futura (además de validarse al enviar).
+const nowLocal = () => toLocalDatetime(new Date());
+
+const DNI_PATTERN = /^\d{6,8}$/;
+
 const ID_TYPES = [
   { value: 'NN', label: 'No Identificado (NN)' },
   { value: 'DNI', label: 'DNI' },
@@ -197,11 +203,28 @@ export default function CreateCallWizard({ onClose, onCreated }) {
         if (!areaId) return 'Seleccioná un área para continuar.';
         return null;
       case 2: {
-        if (patientIdType === 'DNI' && !patientDni.trim()) return 'Ingresá el DNI del paciente.';
+        if (patientIdType === 'DNI') {
+          if (!patientDni.trim()) return 'Ingresá el DNI del paciente.';
+          if (!DNI_PATTERN.test(patientDni.trim())) return 'El DNI debe tener entre 6 y 8 dígitos numéricos.';
+        }
         if (patientIdType === 'TEMPORARY_ID' && !patientTempId.trim()) return 'Ingresá el ID temporario.';
+        if (patientAge === '' || patientAge === null || patientAge === undefined) return 'Ingresá la edad del paciente (puede ser estimada).';
+        if (!admissionDate) return 'Ingresá la fecha de ingreso.';
+        if (admissionDate && new Date(admissionDate) > new Date()) {
+          return 'La fecha de ingreso no puede ser futura.';
+        }
         return null;
       }
       case 3: {
+        // En un llamado de Emergencia (Código Azul) estos tres hitos son obligatorios:
+        // sin ellos no se puede calcular el tiempo de respuesta (CP-6) y el formulario
+        // Utstein pierde su propósito (CU-07 incluye CU-08/CU-10, y CU-12 depende de esto).
+        if (callType === 'EMERGENCY') {
+          if (!callReceivedAt) return 'La hora de Recepción / Activación del Código es obligatoria en una Emergencia.';
+          if (!teamArrivalAt) return 'La hora de Llegada del Equipo es obligatoria en una Emergencia.';
+          if (!eventEndedAt) return 'La hora de Fin / Suspensión del Evento es obligatoria en una Emergencia.';
+        }
+
         const times = [
           { label: 'Recepción', val: callReceivedAt },
           { label: 'Llegada', val: teamArrivalAt },
@@ -209,7 +232,13 @@ export default function CreateCallWizard({ onClose, onCreated }) {
           { label: 'RCE', val: roscAt },
           { label: 'Fin de Evento', val: eventEndedAt }
         ].filter(t => t.val);
-        
+
+        for (const t of times) {
+          if (new Date(t.val) > new Date()) {
+            return `El tiempo de "${t.label}" no puede ser futuro.`;
+          }
+        }
+
         for (let i = 0; i < times.length - 1; i++) {
           if (new Date(times[i].val) > new Date(times[i+1].val)) {
             return `El tiempo de "${times[i+1].label}" no puede ser anterior a "${times[i].label}".`;
@@ -233,6 +262,9 @@ export default function CreateCallWizard({ onClose, onCreated }) {
           if (!d.performedAt || !d.energyDelivered || !d.rhythm || !d.sequenceNumber) {
             return `Completá todos los campos de la desfibrilación N° ${d.sequenceNumber || i+1}.`;
           }
+          if (new Date(d.performedAt) > new Date()) {
+            return `La hora de la desfibrilación N° ${d.sequenceNumber || i+1} no puede ser futura.`;
+          }
           if (callReceivedAt && new Date(d.performedAt) < new Date(callReceivedAt)) {
             return `La hora de la desfibrilación N° ${d.sequenceNumber || i+1} no puede ser anterior al inicio del evento.`;
           }
@@ -242,6 +274,9 @@ export default function CreateCallWizard({ onClose, onCreated }) {
           if (!d.crashCartItemId || !d.dose || !d.unit || !d.route || !d.administeredAt) {
             return `Completá todos los campos de la droga administrada (${d.drugName || 'Fila ' + (i+1)}).`;
           }
+          if (new Date(d.administeredAt) > new Date()) {
+            return `La hora de administración de ${d.drugName} no puede ser futura.`;
+          }
           if (callReceivedAt && new Date(d.administeredAt) < new Date(callReceivedAt)) {
             return `La hora de administración de ${d.drugName} no puede ser anterior al inicio del evento.`;
           }
@@ -249,11 +284,17 @@ export default function CreateCallWizard({ onClose, onCreated }) {
         return null;
       }
       case 5: {
+        // CU-10 (Asignar Equipo de Respuesta) es inclusión OBLIGATORIA de CU-07
+        // (Documento de Análisis y Diseño, 4.4). No se puede registrar sin nadie asignado.
         for (let i = 0; i < teamAssignments.length; i++) {
           const a = teamAssignments[i];
           if (!a.positionId || !a.staffMemberId) {
             return `Completá la posición y el personal para la asignación de la fila ${i+1}.`;
           }
+        }
+        const validCount = teamAssignments.filter(a => a.positionId && a.staffMemberId).length;
+        if (validCount === 0) {
+          return 'Asigná al menos un integrante del equipo de respuesta (obligatorio).';
         }
         return null;
       }
@@ -417,6 +458,7 @@ export default function CreateCallWizard({ onClose, onCreated }) {
               cprStartedAt={cprStartedAt} setCprStartedAt={setCprStartedAt}
               roscAt={roscAt} setRoscAt={setRoscAt}
               eventEndedAt={eventEndedAt} setEventEndedAt={setEventEndedAt}
+              callType={callType}
             />
           )}
           {step === 4 && (
@@ -551,8 +593,14 @@ function Step2Patient({
 
         {patientIdType === 'DNI' && (
           <div className="input-group">
-            <label htmlFor="wiz-dni">DNI *</label>
-            <input id="wiz-dni" className="input" type="text" placeholder="Ej. 40123456" value={patientDni} onChange={e => setPatientDni(e.target.value)} required />
+            <label htmlFor="wiz-dni">DNI * (6 a 8 dígitos)</label>
+            <input
+              id="wiz-dni" className="input" type="text" inputMode="numeric"
+              placeholder="Ej. 40123456" maxLength={8}
+              value={patientDni}
+              onChange={e => setPatientDni(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              required
+            />
           </div>
         )}
         {patientIdType === 'TEMPORARY_ID' && (
@@ -570,13 +618,13 @@ function Step2Patient({
         </div>
 
         <div className="input-group">
-          <label htmlFor="wiz-age">Edad</label>
-          <input id="wiz-age" className="input" type="number" min={0} max={150} placeholder="Años" value={patientAge} onChange={e => setPatientAge(e.target.value)} />
+          <label htmlFor="wiz-age">Edad *</label>
+          <input id="wiz-age" className="input" type="number" min={0} max={150} placeholder="Años" value={patientAge} onChange={e => setPatientAge(e.target.value)} required />
         </div>
 
         <div className="input-group">
-          <label htmlFor="wiz-admission">Fecha de Ingreso</label>
-          <input id="wiz-admission" className="input" type="datetime-local" step="1" value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} />
+          <label htmlFor="wiz-admission">Fecha de Ingreso *</label>
+          <input id="wiz-admission" className="input" type="datetime-local" step="1" max={nowLocal()} value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} required />
         </div>
 
         {origin === 'EXTRA_HOSPITAL' && (
@@ -596,27 +644,30 @@ function Step2Patient({
 function Step3Chronology({
   callReceivedAt, setCallReceivedAt, teamArrivalAt, setTeamArrivalAt,
   cprStartedAt, setCprStartedAt, roscAt, setRoscAt,
-  eventEndedAt, setEventEndedAt,
+  eventEndedAt, setEventEndedAt, callType,
 }) {
+  const required = callType === 'EMERGENCY';
   const timeFields = [
-    { id: 'wiz-received', label: 'Recepción / Activación del Código', value: callReceivedAt, set: setCallReceivedAt },
-    { id: 'wiz-arrival', label: 'Llegada del Equipo', value: teamArrivalAt, set: setTeamArrivalAt, min: callReceivedAt },
+    { id: 'wiz-received', label: `Recepción / Activación del Código${required ? ' *' : ''}`, value: callReceivedAt, set: setCallReceivedAt },
+    { id: 'wiz-arrival', label: `Llegada del Equipo${required ? ' *' : ''}`, value: teamArrivalAt, set: setTeamArrivalAt, min: callReceivedAt },
     { id: 'wiz-cpr', label: 'Inicio de RCP', value: cprStartedAt, set: setCprStartedAt, min: teamArrivalAt || callReceivedAt },
     { id: 'wiz-rosc', label: 'Retorno de Circulación Espontánea (RCE)', value: roscAt, set: setRoscAt, min: cprStartedAt || teamArrivalAt || callReceivedAt },
-    { id: 'wiz-end', label: 'Fin / Suspensión del Evento', value: eventEndedAt, set: setEventEndedAt, min: callReceivedAt },
+    { id: 'wiz-end', label: `Fin / Suspensión del Evento${required ? ' *' : ''}`, value: eventEndedAt, set: setEventEndedAt, min: callReceivedAt },
   ];
 
   return (
     <div style={sectionStyle}>
       <h3 style={sectionTitleStyle}>Cronología de Tiempos Críticos</h3>
       <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: 'var(--space-md)' }}>
-        Registre la hora exacta de cada hito del evento. El RCE es opcional si no hubo retorno de circulación.
+        {required
+          ? 'Al ser un llamado de Emergencia (Código Azul), Recepción, Llegada del Equipo y Fin del Evento (*) son obligatorios: de ahí se calcula el tiempo de respuesta. El RCE es opcional si no hubo retorno de circulación.'
+          : 'Registre la hora exacta de cada hito del evento. El RCE es opcional si no hubo retorno de circulación.'}
       </p>
       <div style={fieldGridStyle}>
         {timeFields.map(f => (
           <div className="input-group" key={f.id}>
             <label htmlFor={f.id}>{f.label}</label>
-            <input id={f.id} className="input" type="datetime-local" step="1" value={f.value} min={f.min || undefined} onChange={e => f.set(e.target.value)} />
+            <input id={f.id} className="input" type="datetime-local" step="1" value={f.value} min={f.min || undefined} max={nowLocal()} onChange={e => f.set(e.target.value)} />
           </div>
         ))}
       </div>
@@ -707,7 +758,7 @@ function Step4Clinical({
             </div>
             <div className="input-group" style={{ margin: 0 }}>
               <label style={{ fontSize: '0.75rem' }}>Hora</label>
-              <input className="input" type="datetime-local" step="1" min={callReceivedAt || undefined} value={d.performedAt} onChange={e => updateDefib(i, 'performedAt', e.target.value)} />
+              <input className="input" type="datetime-local" step="1" min={callReceivedAt || undefined} max={nowLocal()} value={d.performedAt} onChange={e => updateDefib(i, 'performedAt', e.target.value)} />
             </div>
             <div className="input-group" style={{ margin: 0, minWidth: 80 }}>
               <label style={{ fontSize: '0.75rem' }}>Energía (J)</label>
@@ -760,7 +811,7 @@ function Step4Clinical({
             </div>
             <div className="input-group" style={{ margin: 0 }}>
               <label style={{ fontSize: '0.75rem' }}>Hora</label>
-              <input className="input" type="datetime-local" step="1" min={callReceivedAt || undefined} value={d.administeredAt} onChange={e => updateDrug(i, 'administeredAt', e.target.value)} />
+              <input className="input" type="datetime-local" step="1" min={callReceivedAt || undefined} max={nowLocal()} value={d.administeredAt} onChange={e => updateDrug(i, 'administeredAt', e.target.value)} />
             </div>
             <button className="btn btn-sm btn-danger" type="button" onClick={() => removeDrug(i)} style={{ marginBottom: 2 }}>✕</button>
           </div>
@@ -790,11 +841,11 @@ function Step5Team({ teamAssignments, setTeamAssignments, positions, staffList }
   return (
     <div style={sectionStyle}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
-        <h3 style={{ ...sectionTitleStyle, marginBottom: 0 }}>Equipo Interviniente ({teamAssignments.length})</h3>
+        <h3 style={{ ...sectionTitleStyle, marginBottom: 0 }}>Equipo Interviniente ({teamAssignments.length}) *</h3>
         <button type="button" style={addBtnStyle} onClick={addAssignment}>+ Agregar persona</button>
       </div>
       <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: 'var(--space-md)' }}>
-        Asigne personal a cada posición del equipo de respuesta (Líder, Vía aérea, Compresiones, etc.).
+        Asigne personal a cada posición del equipo de respuesta (Líder, Vía aérea, Compresiones, etc.). Obligatorio: al menos una persona.
       </p>
 
       {activePositions.length === 0 || activeStaff.length === 0 ? (
