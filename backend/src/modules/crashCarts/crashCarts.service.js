@@ -146,25 +146,43 @@ async function addDefaultItems(crashCartId) {
       positionId: position.id,
       name: m.name,
       standardQuantity: DEFAULT_STANDARD_QUANTITY,
-      unit: null,
+      unit: m.unit || null,
       category: m.category,
     }))
   );
 }
 
-// Crea el carro de paro de un área CON su composición estándar. No existe "carro vacío":
-// todo carro nace con los 28 medicamentos. Un solo carro por área.
+// Siembra la composición de un carro nuevo: copia la del carro más antiguo del área
+// (su "carro estándar", con las cantidades ya ajustadas). Si el área todavía no tiene
+// otro carro, cae en la composición por defecto global (28 medicamentos, cantidad 1).
+async function seedCompositionFromArea(newCartId, areaId) {
+  const template = await repo.carts.templateForArea(areaId, newCartId);
+  if (template && template.items.length) {
+    await repo.items.createMany(
+      template.items.map((it) => ({
+        crashCartId: newCartId,
+        positionId: it.positionId,
+        name: it.name,
+        standardQuantity: it.standardQuantity,
+        unit: it.unit,
+        category: it.category,
+      }))
+    );
+    return;
+  }
+  await addDefaultItems(newCartId);
+}
+
+// Crea un carro de paro y lo asigna a un área. No existe "carro vacío": hereda la
+// composición estándar del área (o los 28 por defecto si es el primer carro del área).
 async function createCart(body) {
   requireFields(body, ["name", "areaId"]);
   const area = await areasRepo.findById(body.areaId);
   if (!area) throw new AppError(404, "El área indicada no existe");
   if (!area.isActive) throw new AppError(400, "El área indicada está desactivada");
-  if (await repo.carts.countByArea(body.areaId)) {
-    throw new AppError(409, "El área ya tiene un carro de paro. Solo puede haber uno por área.");
-  }
 
   const cart = await repo.carts.create({ name: body.name, areaId: body.areaId });
-  await addDefaultItems(cart.id);
+  await seedCompositionFromArea(cart.id, body.areaId);
   return repo.carts.findDetail(cart.id);
 }
 
@@ -188,7 +206,6 @@ async function loadDefaultComposition(id) {
 }
 
 // Actualiza datos básicos del carro (nombre, área asignada).
-// Si se cambia el área, verifica que la nueva área no tenga ya un carro asignado.
 async function updateCart(id, body) {
   if (!(await repo.carts.findById(id))) throw new AppError(404, "Carro no encontrado");
   const data = {};
@@ -197,11 +214,6 @@ async function updateCart(id, body) {
     const area = await areasRepo.findById(body.areaId);
     if (!area) throw new AppError(404, "El área indicada no existe");
     if (!area.isActive) throw new AppError(400, "El área indicada está desactivada");
-    // Un solo carro por área: si el destino ya tiene uno (que no sea este), rechazar.
-    const existing = await repo.carts.findMany({ areaId: body.areaId });
-    if (existing.some((c) => c.id !== id)) {
-      throw new AppError(409, "El área de destino ya tiene un carro de paro.");
-    }
     data.areaId = body.areaId;
   }
   // El estado no se toca acá: baja por consumo (calls), alta por /reactivate.

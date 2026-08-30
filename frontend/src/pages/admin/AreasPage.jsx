@@ -455,6 +455,7 @@ function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onR
           <table>
             <thead>
               <tr>
+                <th style={{ width: 40, textAlign: 'right' }}>#</th>
                 <th>Ítem</th>
                 <th style={{ width: 120 }}>Cant. estándar</th>
                 <th>Unidad</th>
@@ -462,11 +463,12 @@ function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onR
               </tr>
             </thead>
             <tbody>
-              {items.map((it) => {
+              {items.map((it, i) => {
                 const draft = qtyDraft[it.id] ?? String(it.standardQuantity);
                 const changed = draft !== String(it.standardQuantity);
                 return (
                 <tr key={it.id}>
+                  <td style={{ textAlign: 'right', color: 'var(--text-tertiary)' }}>{i + 1}</td>
                   <td>{it.name}</td>
                   <td>
                     <input

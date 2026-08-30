@@ -141,23 +141,16 @@ function CreateCartModal({ token, API_URL, onClose, onCreated }) {
   const [name, setName] = useState('');
   const [areaId, setAreaId] = useState('');
   const [areas, setAreas] = useState([]);
-  const [existingCarts, setExistingCarts] = useState([]);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Cargar áreas activas y carros existentes para filtrar
-    Promise.all([
-      fetch(`${API_URL}/api/areas?isActive=true`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(`${API_URL}/api/crash-carts`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-    ]).then(([areasData, cartsData]) => {
-      setAreas(Array.isArray(areasData) ? areasData : areasData.data || []);
-      setExistingCarts(Array.isArray(cartsData) ? cartsData : cartsData.data || []);
-    }).catch(() => setError('Error al cargar datos'));
+    // Un área puede tener varios carros: se listan todas las áreas activas.
+    fetch(`${API_URL}/api/areas?isActive=true`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => setAreas(Array.isArray(data) ? data : data.data || []))
+      .catch(() => setError('Error al cargar las áreas'));
   }, [API_URL, token]);
-
-  // Áreas que aún no tienen carro de paro
-  const areasWithoutCart = areas.filter(a => !existingCarts.some(c => c.areaId === a.id || c.area?.id === a.id));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -205,27 +198,21 @@ function CreateCartModal({ token, API_URL, onClose, onCreated }) {
           </div>
           <div className="input-group">
             <label htmlFor="cart-area">Área *</label>
-            {areasWithoutCart.length === 0 && areas.length > 0 ? (
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
-                Todas las áreas activas ya tienen un carro de paro asignado.
-              </p>
-            ) : (
-              <select
-                id="cart-area"
-                className="input"
-                value={areaId}
-                onChange={(e) => setAreaId(e.target.value)}
-                required
-              >
-                <option value="">Seleccionar área...</option>
-                {areasWithoutCart.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </select>
-            )}
+            <select
+              id="cart-area"
+              className="input"
+              value={areaId}
+              onChange={(e) => setAreaId(e.target.value)}
+              required
+            >
+              <option value="">Seleccionar área...</option>
+              {areas.map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
           </div>
           <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginTop: 8 }}>
-            Se creará con la composición estándar (28 medicamentos).
+            Hereda la composición estándar del área elegida (mismos ítems y cantidades). Un área puede tener varios carros.
           </p>
           <div className="modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
@@ -259,7 +246,6 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-  const [qtyDraft, setQtyDraft] = useState({});
 
   const flash = (m) => { setMsg(m); setErr(''); };
   const fail = (m) => { setErr(m); setMsg(''); };
@@ -271,9 +257,7 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const data = await res.json();
-        setCart(data);
-        setQtyDraft({});
+        setCart(await res.json());
       } else {
         fail('Error al cargar el detalle del carro');
       }
@@ -292,11 +276,6 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
 
   const items = cart?.items || [];
   const outOfService = (cart || initialCart).status === 'OUT_OF_SERVICE';
-
-  // Ítems cuya cantidad fue editada
-  const pendingQty = items.filter(
-    (it) => qtyDraft[it.id] !== undefined && String(qtyDraft[it.id]) !== String(it.standardQuantity)
-  );
 
   // --- Acciones ---
 
@@ -357,69 +336,6 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
       if (!res.ok) return fail(await readError(res, 'No se pudo eliminar el carro'));
       onChanged();
       onClose();
-    } finally { setBusy(false); }
-  };
-
-  // Stock: guardar cantidades editadas
-  const saveAllQty = async () => {
-    if (!pendingQty.length) return;
-    setBusy(true);
-    try {
-      for (const it of pendingQty) {
-        const res = await fetch(`${API_URL}/api/crash-cart-items/${it.id}`, {
-          method: 'PATCH', headers: authHeaders,
-          body: JSON.stringify({ standardQuantity: Number(qtyDraft[it.id]) }),
-        });
-        if (!res.ok) return fail(await readError(res, `No se pudo guardar "${it.name}"`));
-      }
-      flash(`${pendingQty.length} cantidad(es) actualizada(s)`);
-      await loadDetail();
-    } finally { setBusy(false); }
-  };
-
-  // Stock: quitar ítem
-  const removeItem = async (itemId) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-cart-items/${itemId}`, {
-        method: 'DELETE', headers: authHeaders,
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo quitar el ítem'));
-      flash('Ítem quitado');
-      await loadDetail();
-    } finally { setBusy(false); }
-  };
-
-  // Stock: agregar ítem
-  const addItem = async (item) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-cart-items`, {
-        method: 'POST', headers: authHeaders,
-        body: JSON.stringify({
-          crashCartId: initialCart.id,
-          name: item.name.trim(),
-          standardQuantity: Number(item.standardQuantity) || 1,
-          unit: item.unit.trim() || null,
-        }),
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo agregar el ítem'));
-      flash('Ítem agregado');
-      await loadDetail();
-      return true;
-    } finally { setBusy(false); }
-  };
-
-  // Stock: cargar composición estándar en carro vacío
-  const loadDefault = async () => {
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/crash-carts/${initialCart.id}/load-default-composition`, {
-        method: 'POST', headers: authHeaders,
-      });
-      if (!res.ok) return fail(await readError(res, 'No se pudo cargar la composición estándar'));
-      flash('Composición estándar cargada (28 medicamentos)');
-      await loadDetail();
     } finally { setBusy(false); }
   };
 
@@ -489,125 +405,49 @@ function ManageCartModal({ cart: initialCart, token, API_URL, onClose, onChanged
           )}
         </section>
 
-        {/* --- OLI-71: Stock / Composición estándar --- */}
+        {/* --- Composición estándar: SOLO LECTURA. Se edita desde Áreas. --- */}
         <section>
           <h3 style={{ marginBottom: 8 }}>Composición estándar (stock)</h3>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginBottom: 10 }}>
+            Solo visualización. Para cambiar el contenido de un carro, editá la composición
+            estándar del área en <strong>Áreas → Gestionar</strong>.
+          </p>
           {cart === null ? (
             <p style={{ color: 'var(--text-tertiary)' }}>Cargando...</p>
+          ) : items.length === 0 ? (
+            <p style={{ color: 'var(--text-tertiary)' }}>Sin composición cargada.</p>
           ) : (
-            <CartStockEditor
-              items={items}
-              busy={busy}
-              qtyDraft={qtyDraft}
-              onQtyChange={(itemId, value) => setQtyDraft((d) => ({ ...d, [itemId]: value }))}
-              onLoadDefault={loadDefault}
-              onRemoveItem={removeItem}
-              onAddItem={addItem}
-            />
+            <div style={{ border: '1px solid var(--border-subtle, #333947)', borderRadius: 8, padding: 12 }}>
+              <div className="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40, textAlign: 'right' }}>#</th>
+                      <th>Ítem</th>
+                      <th style={{ width: 120 }}>Cant. estándar</th>
+                      <th>Unidad</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((it, i) => (
+                      <tr key={it.id}>
+                        <td style={{ textAlign: 'right', color: 'var(--text-tertiary)' }}>{i + 1}</td>
+                        <td>{it.name}</td>
+                        <td>{it.standardQuantity}</td>
+                        <td>{it.unit || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </section>
 
         <div className="modal-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>Cerrar</button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={saveAllQty}
-            disabled={busy || pendingQty.length === 0}
-          >
-            {pendingQty.length ? `Guardar (${pendingQty.length})` : 'Guardar'}
-          </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// OLI-71: Editor de stock del carro (tabla de ítems con edición inline)
-// ---------------------------------------------------------------------------
-function CartStockEditor({ items, busy, qtyDraft, onQtyChange, onLoadDefault, onRemoveItem, onAddItem }) {
-  const [adding, setAdding] = useState(false);
-  const [newItem, setNewItem] = useState({ name: '', standardQuantity: 1, unit: '' });
-
-  if (items.length === 0) {
-    return (
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <span style={{ color: 'var(--text-tertiary)' }}>Sin composición cargada.</span>
-        <button className="btn btn-sm btn-primary" onClick={onLoadDefault} disabled={busy}>
-          Cargar composición estándar (28 medicamentos)
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ border: '1px solid var(--border-subtle, #333947)', borderRadius: 8, padding: 12 }}>
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Ítem</th>
-              <th style={{ width: 120 }}>Cant. estándar</th>
-              <th>Unidad</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => {
-              const draft = qtyDraft[it.id] ?? String(it.standardQuantity);
-              const changed = draft !== String(it.standardQuantity);
-              return (
-                <tr key={it.id}>
-                  <td>{it.name}</td>
-                  <td>
-                    <input
-                      className="input"
-                      type="number"
-                      min={0}
-                      style={{ width: 70, ...(changed ? { borderColor: '#F59E0B' } : {}) }}
-                      value={draft}
-                      onChange={(e) => onQtyChange(it.id, e.target.value)}
-                    />
-                  </td>
-                  <td>{it.unit || '—'}</td>
-                  <td>
-                    <button className="btn btn-sm btn-danger" onClick={() => onRemoveItem(it.id)} disabled={busy}>Quitar</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {adding ? (
-        <form
-          style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, alignItems: 'flex-end' }}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const ok = await onAddItem(newItem);
-            if (ok) { setNewItem({ name: '', standardQuantity: 1, unit: '' }); setAdding(false); }
-          }}
-        >
-          <div className="input-group" style={{ margin: 0 }}>
-            <label>Ítem</label>
-            <input className="input" required value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="Ej. Adrenalina" />
-          </div>
-          <div className="input-group" style={{ margin: 0 }}>
-            <label>Cantidad</label>
-            <input className="input" type="number" min={0} style={{ width: 80 }} value={newItem.standardQuantity} onChange={(e) => setNewItem({ ...newItem, standardQuantity: e.target.value })} />
-          </div>
-          <div className="input-group" style={{ margin: 0 }}>
-            <label>Unidad</label>
-            <input className="input" style={{ width: 110 }} value={newItem.unit} onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })} placeholder="ampolla" />
-          </div>
-          <button type="submit" className="btn btn-sm btn-primary" disabled={busy}>Agregar</button>
-          <button type="button" className="btn btn-sm btn-secondary" onClick={() => setAdding(false)}>Cancelar</button>
-        </form>
-      ) : (
-        <button className="btn btn-sm btn-secondary" style={{ marginTop: 10 }} onClick={() => setAdding(true)}>+ Agregar ítem</button>
-      )}
     </div>
   );
 }
