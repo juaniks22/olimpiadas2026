@@ -10,7 +10,186 @@ import {
   Cell,
   Tooltip,
   Legend,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from 'recharts';
+
+// Iconos para el selector de tipo de gráfico
+const CHART_TYPE_ICONS = {
+  pie: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+      <path d="M22 12A10 10 0 0 0 12 2v10z" />
+    </svg>
+  ),
+  bar: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  ),
+  line: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  ),
+};
+
+// Selector de tipo de gráfico (pastel / barras / líneas)
+function ChartTypeToggle({ value, onChange }) {
+  return (
+    <div className="chart-type-toggle">
+      {['pie', 'bar', 'line'].map((type) => (
+        <button
+          key={type}
+          type="button"
+          className={`chart-type-btn ${value === type ? 'chart-type-btn--active' : ''}`}
+          onClick={() => onChange(type)}
+          title={
+            type === 'pie' ? 'Gráfico de pastel' : type === 'bar' ? 'Gráfico de barras' : 'Gráfico de líneas'
+          }
+        >
+          {CHART_TYPE_ICONS[type]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Tarjeta de gráfico intercambiable (pastel / barras / líneas) para una distribución de conteos
+function SwitchableDistributionChart({ title, subtitle, data, colors, chartType, onChangeChartType, unitLabel = 'llamados' }) {
+  if (!data.length) return null;
+
+  return (
+    <div className="card-flat report-chart-card">
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 'var(--space-md)',
+          marginBottom: 'var(--space-md)',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>{title}</h3>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>{subtitle}</p>
+        </div>
+        <ChartTypeToggle value={chartType} onChange={onChangeChartType} />
+      </div>
+
+      <div style={{ width: '100%', height: 280 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {chartType === 'pie' ? (
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={4}
+                dataKey="value"
+                stroke="none"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                labelLine={{ stroke: 'var(--text-tertiary)', strokeWidth: 1 }}
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--bg-card)',
+                  borderColor: 'var(--border-card)',
+                  borderRadius: '12px',
+                  color: 'var(--text-primary)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  fontSize: '0.8125rem',
+                }}
+                formatter={(value, name) => [`${value} ${unitLabel}`, name]}
+              />
+              <Legend wrapperStyle={{ fontSize: '0.8125rem', paddingTop: '12px' }} iconType="circle" iconSize={8} />
+            </PieChart>
+          ) : chartType === 'bar' ? (
+            <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
+                axisLine={{ stroke: 'var(--border-card)' }}
+                tickLine={false}
+                interval={0}
+                angle={data.length > 4 ? -20 : 0}
+                textAnchor={data.length > 4 ? 'end' : 'middle'}
+                height={data.length > 4 ? 50 : 30}
+              />
+              <YAxis allowDecimals={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--bg-card)',
+                  borderColor: 'var(--border-card)',
+                  borderRadius: '12px',
+                  color: 'var(--text-primary)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  fontSize: '0.8125rem',
+                }}
+                cursor={{ fill: 'var(--bg-input)' }}
+                formatter={(value) => [`${value} ${unitLabel}`, '']}
+              />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          ) : (
+            <LineChart data={data} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" vertical={false} />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }}
+                axisLine={{ stroke: 'var(--border-card)' }}
+                tickLine={false}
+                interval={0}
+                angle={data.length > 4 ? -20 : 0}
+                textAnchor={data.length > 4 ? 'end' : 'middle'}
+                height={data.length > 4 ? 50 : 30}
+              />
+              <YAxis allowDecimals={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--bg-card)',
+                  borderColor: 'var(--border-card)',
+                  borderRadius: '12px',
+                  color: 'var(--text-primary)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  fontSize: '0.8125rem',
+                }}
+                formatter={(value) => [`${value} ${unitLabel}`, '']}
+              />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke={colors[0]}
+                strokeWidth={2.5}
+                dot={{ r: 4, fill: colors[0] }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
 
 export default function ReportsPage() {
   const { token, API_URL } = useContext(AuthContext);
@@ -214,6 +393,44 @@ export default function ReportsPage() {
       { name: 'Normal', value: normal },
       { name: 'RCE Logrado', value: rce },
     ].filter((d) => d.value > 0);
+  }, [calls]);
+
+  // Selector de tipo de gráfico para "Origen de Llamados" y "Área de Origen"
+  const [originChartType, setOriginChartType] = useState('pie');
+  const [areaChartType, setAreaChartType] = useState('pie');
+
+  const ORIGIN_COLORS = ['#3B82F6', '#F59E0B'];
+  const AREA_COLORS = [
+    '#2563EB', '#F43F5E', '#10B981', '#8B5CF6', '#F59E0B',
+    '#06B6D4', '#EC4899', '#84CC16', '#6366F1', '#14B8A6',
+  ];
+
+  // Datos: Origen del llamado (Intrahospitalario / Extrahospitalario)
+  const originData = useMemo(() => {
+    if (!calls.length) return [];
+    let intra = 0;
+    let extra = 0;
+    calls.forEach((c) => {
+      if (c.origen === 'INTRA_HOSPITAL') intra += 1;
+      else extra += 1;
+    });
+    return [
+      { name: 'Intrahospitalario', value: intra },
+      { name: 'Extrahospitalario', value: extra },
+    ].filter((d) => d.value > 0);
+  }, [calls]);
+
+  // Datos: Área de origen de los llamados
+  const areaData = useMemo(() => {
+    if (!calls.length) return [];
+    const counts = {};
+    calls.forEach((c) => {
+      const areaName = c.area || 'Sin área';
+      counts[areaName] = (counts[areaName] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   }, [calls]);
 
   // Paginación de llamados
@@ -566,6 +783,27 @@ export default function ReportsPage() {
         </div>
       )}
 
+      {/* 4b. Origen de Llamados y Área de Origen (intercambiable: pastel / barras / líneas) */}
+      <div className="reports-charts-row">
+        <SwitchableDistributionChart
+          title="Origen de Llamados"
+          subtitle="Comparación entre llamados intrahospitalarios y extrahospitalarios."
+          data={originData}
+          colors={ORIGIN_COLORS}
+          chartType={originChartType}
+          onChangeChartType={setOriginChartType}
+        />
+
+        <SwitchableDistributionChart
+          title="Área de Origen"
+          subtitle="Distribución de llamados según el área hospitalaria de procedencia."
+          data={areaData}
+          colors={AREA_COLORS}
+          chartType={areaChartType}
+          onChangeChartType={setAreaChartType}
+        />
+      </div>
+
       {/* 5. Listado Completo de Reportes con Filtros Avanzados (OLI-90) */}
       <div className="card-flat">
         <div className="table-header-row">
@@ -598,16 +836,16 @@ export default function ReportsPage() {
           <table>
             <thead>
               <tr>
-                <th>N° / ID</th>
+                <th className="text-center">N° / ID</th>
                 <th>Fecha y Hora</th>
-                <th>Tipo</th>
-                <th>Origen</th>
+                <th className="text-center">Tipo</th>
+                <th className="text-center">Origen</th>
                 <th>Área</th>
-                <th>Paciente</th>
-                <th>T. Respuesta</th>
-                <th>RCE</th>
+                <th className="text-center">Paciente</th>
+                <th className="text-center">T. Respuesta</th>
+                <th className="text-center">RCE</th>
                 <th>Cargado Por</th>
-                <th>Acción</th>
+                <th className="text-center">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -635,27 +873,27 @@ export default function ReportsPage() {
 
                   return (
                     <tr key={call.id}>
-                      <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                      <td className="text-center" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
                         #{itemNumber}
                       </td>
                       <td style={{ color: 'var(--text-secondary)' }}>{formattedDate}</td>
-                      <td>
+                      <td className="text-center">
                         <span className={`badge ${call.tipo === 'EMERGENCY' ? 'badge-danger' : 'badge-info'}`}>
                           {call.tipo === 'EMERGENCY' ? 'Emergencia' : 'Normal'}
                         </span>
                       </td>
-                      <td>
+                      <td className="text-center">
                         <span style={{ fontSize: '0.8125rem' }}>
                           {call.origen === 'INTRA_HOSPITAL' ? 'Intrahospitalario' : 'Extrahospitalario'}
                         </span>
                       </td>
                       <td style={{ fontWeight: 500 }}>{call.area || '—'}</td>
-                      <td>
+                      <td className="text-center">
                         <span className="badge badge-secondary" style={{ background: 'var(--bg-input)' }}>
                           {call.pacienteId || 'NN'}
                         </span>
                       </td>
-                      <td>
+                      <td className="text-center">
                         {call.tiempoRespuestaMinutos !== null ? (
                           <span
                             style={{
@@ -669,13 +907,13 @@ export default function ReportsPage() {
                           <span style={{ color: 'var(--text-tertiary)' }}>s/d</span>
                         )}
                       </td>
-                      <td>
+                      <td className="text-center">
                         <span className={`badge ${call.rce === 'si' ? 'badge-success' : 'badge-danger'}`}>
                           {call.rce === 'si' ? 'Sí' : 'No'}
                         </span>
                       </td>
                       <td style={{ color: 'var(--text-secondary)' }}>{call.cargadoPor || '—'}</td>
-                      <td>
+                      <td className="text-center">
                         <button
                           type="button"
                           className="btn btn-sm btn-secondary"

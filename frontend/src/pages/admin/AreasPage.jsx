@@ -98,8 +98,8 @@ export default function AreasPage() {
             <thead>
               <tr>
                 <th>Nombre</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th className="text-center">Estado</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -111,13 +111,13 @@ export default function AreasPage() {
                 areas.map((area) => (
                   <tr key={area.id}>
                     <td style={{ fontWeight: 600 }}>{area.name}</td>
-                    <td>
+                    <td className="text-center">
                       <span className={`badge ${area.isActive ? 'badge-success' : 'badge-danger'}`}>
                         <span className={`status-dot ${area.isActive ? 'active' : 'inactive'}`}></span>
                         {area.isActive ? 'Activa' : 'Inactiva'}
                       </span>
                     </td>
-                    <td>
+                    <td className="text-center">
                       <button className="btn btn-sm btn-secondary" onClick={() => setManageArea(area)}>
                         Gestionar
                       </button>
@@ -456,9 +456,9 @@ function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onR
             <thead>
               <tr>
                 <th>Ítem</th>
-                <th style={{ width: 120 }}>Cant. estándar</th>
-                <th>Unidad</th>
-                <th></th>
+                <th className="text-center" style={{ width: 120 }}>Cant. estándar</th>
+                <th className="text-center">Unidad</th>
+                <th className="text-center" style={{ width: 100 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -468,18 +468,18 @@ function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onR
                 return (
                 <tr key={it.id}>
                   <td>{it.name}</td>
-                  <td>
+                  <td className="text-center">
                     <input
                       className="input"
                       type="number"
                       min={0}
-                      style={{ width: 70, ...(changed ? { borderColor: '#F59E0B' } : {}) }}
+                      style={{ width: 70, textAlign: 'center', ...(changed ? { borderColor: '#F59E0B' } : {}) }}
                       value={draft}
                       onChange={(e) => onQtyChange(it.id, e.target.value)}
                     />
                   </td>
-                  <td>{it.unit || '—'}</td>
-                  <td>
+                  <td className="text-center">{it.unit || '—'}</td>
+                  <td className="text-center">
                     <button className="btn btn-sm btn-danger" onClick={() => onRemoveItem(it.id)} disabled={busy}>Quitar</button>
                   </td>
                 </tr>

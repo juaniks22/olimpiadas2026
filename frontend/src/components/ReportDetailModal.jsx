@@ -160,19 +160,19 @@ export default function ReportDetailModal({ call, onClose }) {
                 <table style={{ fontSize: '0.8125rem' }}>
                   <thead>
                     <tr>
-                      <th>Secuencia</th>
-                      <th>Hora</th>
-                      <th>Energía</th>
-                      <th>Ritmo</th>
+                      <th className="text-center">Secuencia</th>
+                      <th className="text-center">Hora</th>
+                      <th className="text-center">Energía</th>
+                      <th className="text-center">Ritmo</th>
                     </tr>
                   </thead>
                   <tbody>
                     {call.defibrillations.map((def, idx) => (
                       <tr key={def.id || idx}>
-                        <td>#{def.sequenceNumber || idx + 1}</td>
-                        <td>{formatTimeOnly(def.performedAt)}</td>
-                        <td>{def.energyDelivered ? `${def.energyDelivered} J` : 's/d'}</td>
-                        <td>{def.rhythm || '—'}</td>
+                        <td className="text-center">#{def.sequenceNumber || idx + 1}</td>
+                        <td className="text-center">{formatTimeOnly(def.performedAt)}</td>
+                        <td className="text-center">{def.energyDelivered ? `${def.energyDelivered} J` : 's/d'}</td>
+                        <td className="text-center">{def.rhythm || '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -192,20 +192,20 @@ export default function ReportDetailModal({ call, onClose }) {
                   <thead>
                     <tr>
                       <th>Fármaco</th>
-                      <th>Dosis</th>
-                      <th>Vía</th>
-                      <th>Hora</th>
+                      <th className="text-center">Dosis</th>
+                      <th className="text-center">Vía</th>
+                      <th className="text-center">Hora</th>
                     </tr>
                   </thead>
                   <tbody>
                     {call.drugsAdministered.map((dr, idx) => (
                       <tr key={dr.id || idx}>
                         <td style={{ fontWeight: 600 }}>{dr.drugName}</td>
-                        <td>
+                        <td className="text-center">
                           {dr.dose} {dr.unit}
                         </td>
-                        <td>{dr.route || '—'}</td>
-                        <td>{formatTimeOnly(dr.administeredAt)}</td>
+                        <td className="text-center">{dr.route || '—'}</td>
+                        <td className="text-center">{formatTimeOnly(dr.administeredAt)}</td>
                       </tr>
                     ))}
                   </tbody>

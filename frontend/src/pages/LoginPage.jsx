@@ -1,6 +1,7 @@
 import { useState, useContext } from 'react';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
+import PasswordInput from '../components/PasswordInput';
 
 export default function LoginPage() {
   const { login, API_URL } = useContext(AuthContext);
@@ -73,10 +74,8 @@ export default function LoginPage() {
 
             <div className="input-group">
               <label htmlFor="login-password">Contraseña</label>
-              <input
+              <PasswordInput
                 id="login-password"
-                className="input"
-                type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

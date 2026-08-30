@@ -407,9 +407,9 @@ export default function AdminDashboard() {
                 <th>Fecha</th>
                 <th>Área</th>
                 <th>Paciente</th>
-                <th>Tipo</th>
-                <th>Origen</th>
-                <th>T. Respuesta</th>
+                <th className="text-center">Tipo</th>
+                <th className="text-center">Origen</th>
+                <th className="text-center">T. Respuesta</th>
                 <th>Cargado por</th>
               </tr>
             </thead>
@@ -424,13 +424,13 @@ export default function AdminDashboard() {
                     <td style={{ color: 'var(--text-secondary)' }}>{formatReportDate(r.fecha)}</td>
                     <td>{r.area || 's/d'}</td>
                     <td>{getReportPatientLabel(r)}</td>
-                    <td>
+                    <td className="text-center">
                       <span className={`badge ${r.tipo === 'EMERGENCY' ? 'badge-danger' : 'badge-info'}`}>
                         {r.tipo === 'EMERGENCY' ? 'Emergencia' : 'Normal'}
                       </span>
                     </td>
-                    <td>{r.origen === 'INTRA_HOSPITAL' ? 'Intrahospitalario' : 'Extrahospitalario'}</td>
-                    <td>{r.tiempoRespuestaMinutos != null ? `${r.tiempoRespuestaMinutos} min` : 's/d'}</td>
+                    <td className="text-center">{r.origen === 'INTRA_HOSPITAL' ? 'Intrahospitalario' : 'Extrahospitalario'}</td>
+                    <td className="text-center">{r.tiempoRespuestaMinutos != null ? `${r.tiempoRespuestaMinutos} min` : 's/d'}</td>
                     <td>{r.cargadoPor || 's/d'}</td>
                   </tr>
                 ))

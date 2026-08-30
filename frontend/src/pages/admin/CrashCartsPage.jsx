@@ -68,9 +68,9 @@ export default function CrashCartsPage() {
               <tr>
                 <th>Nombre</th>
                 <th>Área</th>
-                <th>Estado</th>
-                <th>Última Reactivación</th>
-                <th>Acciones</th>
+                <th className="text-center">Estado</th>
+                <th className="text-center">Última Reactivación</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -85,18 +85,18 @@ export default function CrashCartsPage() {
                     <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                       {cart.area?.name || '—'}
                     </td>
-                    <td>
+                    <td className="text-center">
                       <span className={`badge ${cart.status === 'IN_SERVICE' ? 'badge-success' : 'badge-danger'}`}>
                         <span className={`status-dot ${cart.status === 'IN_SERVICE' ? 'active' : 'inactive'}`}></span>
                         {cart.status === 'IN_SERVICE' ? 'En Operación' : 'Fuera de Servicio'}
                       </span>
                     </td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                    <td className="text-center" style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                       {cart.reactivatedAt
                         ? new Date(cart.reactivatedAt).toLocaleString('es-AR')
                         : '—'}
                     </td>
-                    <td>
+                    <td className="text-center">
                       <button className="btn btn-sm btn-secondary" onClick={() => setManageCart(cart)}>
                         Gestionar
                       </button>
@@ -548,9 +548,9 @@ function CartStockEditor({ items, busy, qtyDraft, onQtyChange, onLoadDefault, on
           <thead>
             <tr>
               <th>Ítem</th>
-              <th style={{ width: 120 }}>Cant. estándar</th>
-              <th>Unidad</th>
-              <th></th>
+              <th className="text-center" style={{ width: 120 }}>Cant. estándar</th>
+              <th className="text-center">Unidad</th>
+              <th className="text-center" style={{ width: 100 }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -560,18 +560,18 @@ function CartStockEditor({ items, busy, qtyDraft, onQtyChange, onLoadDefault, on
               return (
                 <tr key={it.id}>
                   <td>{it.name}</td>
-                  <td>
+                  <td className="text-center">
                     <input
                       className="input"
                       type="number"
                       min={0}
-                      style={{ width: 70, ...(changed ? { borderColor: '#F59E0B' } : {}) }}
+                      style={{ width: 70, textAlign: 'center', ...(changed ? { borderColor: '#F59E0B' } : {}) }}
                       value={draft}
                       onChange={(e) => onQtyChange(it.id, e.target.value)}
                     />
                   </td>
-                  <td>{it.unit || '—'}</td>
-                  <td>
+                  <td className="text-center">{it.unit || '—'}</td>
+                  <td className="text-center">
                     <button className="btn btn-sm btn-danger" onClick={() => onRemoveItem(it.id)} disabled={busy}>Quitar</button>
                   </td>
                 </tr>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../App';
+import PasswordInput from '../../components/PasswordInput';
 
 export default function UsersPage() {
   const { token, API_URL } = useContext(AuthContext);
@@ -89,9 +90,9 @@ export default function UsersPage() {
             <thead>
               <tr>
                 <th>Usuario</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th className="text-center">Rol</th>
+                <th className="text-center">Estado</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -103,18 +104,18 @@ export default function UsersPage() {
                 users.map((u) => (
                   <tr key={u.id}>
                     <td style={{ fontWeight: 600 }}>{u.username}</td>
-                    <td>
+                    <td className="text-center">
                       <span className={`badge ${u.role === 'ADMIN' ? 'badge-info' : 'badge-warning'}`}>
                         {u.role === 'ADMIN' ? 'Administrador' : 'Genérico'}
                       </span>
                     </td>
-                    <td>
+                    <td className="text-center">
                       <span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
                         <span className={`status-dot ${u.isActive ? 'active' : 'inactive'}`}></span>
                         {u.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td>
+                    <td className="text-center">
                       <button
                         className={`btn btn-sm ${u.isActive ? 'btn-danger' : 'btn-primary'}`}
                         onClick={() => handleToggleActive(u)}
@@ -161,10 +162,8 @@ export default function UsersPage() {
                 </div>
                 <div className="input-group">
                   <label htmlFor="user-password">Contraseña</label>
-                  <input
+                  <PasswordInput
                     id="user-password"
-                    className="input"
-                    type="password"
                     placeholder="8-12 caract., mayús, minús, num, símbolo"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}

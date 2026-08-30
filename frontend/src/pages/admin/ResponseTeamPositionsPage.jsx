@@ -114,8 +114,8 @@ export default function ResponseTeamPositionsPage() {
             <thead>
               <tr>
                 <th>Nombre de la Posición</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th className="text-center">Estado</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -127,14 +127,14 @@ export default function ResponseTeamPositionsPage() {
                 positions.map((pos) => (
                   <tr key={pos.id} className={!pos.isActive ? 'inactive-row' : ''}>
                     <td style={{ fontWeight: 600 }}>{pos.name}</td>
-                    <td>
+                    <td className="text-center">
                       <span className={`badge ${pos.isActive ? 'badge-success' : 'badge-danger'}`}>
                         <span className={`status-dot ${pos.isActive ? 'active' : 'inactive'}`}></span>
                         {pos.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                    <td className="text-center">
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                         <button className="btn btn-sm btn-secondary" onClick={() => openEdit(pos)}>
                           Editar
                         </button>

@@ -130,8 +130,8 @@ export default function StaffPage() {
                 <th>Nombre</th>
                 <th>Rol / Especialidad</th>
                 <th>Certificaciones</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th className="text-center">Estado</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -146,14 +146,14 @@ export default function StaffPage() {
                     <td>{u.name}</td>
                     <td>{u.role || <span style={{ color: 'var(--text-tertiary)' }}>No especificado</span>}</td>
                     <td>{u.certifications || <span style={{ color: 'var(--text-tertiary)' }}>No especificado</span>}</td>
-                    <td>
+                    <td className="text-center">
                       <span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
                         <span className={`status-dot ${u.isActive ? 'active' : 'inactive'}`}></span>
                         {u.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                    <td className="text-center">
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                         <button className="btn btn-sm btn-secondary" onClick={() => openEdit(u)}>
                           Editar
                         </button>

@@ -48,12 +48,12 @@ export default function GenericHistory() {
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Tipo</th>
-                <th>Origen</th>
+                <th className="text-center">ID</th>
+                <th className="text-center">Tipo</th>
+                <th className="text-center">Origen</th>
                 <th>Área</th>
                 <th>Fecha</th>
-                <th>Acción</th>
+                <th className="text-center">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -64,16 +64,16 @@ export default function GenericHistory() {
               ) : (
                 calls.map((call, i) => (
                   <tr key={call.id}>
-                    <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>#{String(1000 + i + 1)}</td>
-                    <td>
+                    <td className="text-center" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>#{String(1000 + i + 1)}</td>
+                    <td className="text-center">
                       <span className={`badge ${call.type === 'EMERGENCY' ? 'badge-danger' : 'badge-info'}`}>
                         {call.type === 'EMERGENCY' ? 'Emergencia' : 'Normal'}
                       </span>
                     </td>
-                    <td>{call.origin === 'INTRA_HOSPITAL' ? 'Intrahospitalario' : 'Extrahospitalario'}</td>
+                    <td className="text-center">{call.origin === 'INTRA_HOSPITAL' ? 'Intrahospitalario' : 'Extrahospitalario'}</td>
                     <td>{call.area?.name || '—'}</td>
                     <td style={{ color: 'var(--text-secondary)' }}>{formatDate(call.createdAt)}</td>
-                    <td>
+                    <td className="text-center">
                       <button
                         className="btn btn-sm btn-secondary"
                         style={{ color: 'var(--color-primary)' }}

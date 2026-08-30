@@ -140,10 +140,10 @@ export default function GenericDashboard() {
           <table>
             <thead>
               <tr>
-                <th>ID Llamado</th>
+                <th className="text-center">ID Llamado</th>
                 <th>Paciente</th>
                 <th>Hora / Fecha</th>
-                <th>Acción</th>
+                <th className="text-center">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -154,12 +154,12 @@ export default function GenericDashboard() {
               ) : (
                 recentCalls.map((call, i) => (
                   <tr key={call.id}>
-                    <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                    <td className="text-center" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
                       #{String(1000 + i + 1)}
                     </td>
                     <td>{getPatientLabel(call)}</td>
                     <td style={{ color: 'var(--color-primary)' }}>{formatDate(call.createdAt)}</td>
-                    <td>
+                    <td className="text-center">
                       <button
                         className="btn btn-sm btn-secondary"
                         style={{ color: 'var(--color-primary)' }}

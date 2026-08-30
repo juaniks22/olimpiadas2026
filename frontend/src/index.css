@@ -288,6 +288,52 @@ h4 { font-size: 1.125rem; }
   color: var(--text-tertiary);
 }
 
+/* --- Campo de contraseña con ícono de mostrar/ocultar --- */
+.password-field {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+.password-field .input {
+  padding-right: 44px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.password-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-secondary);
+  background: var(--color-primary-light);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+
 .input:focus,
 .select:focus {
   border-color: var(--color-primary);
@@ -362,6 +408,8 @@ table th {
   letter-spacing: 0.05em;
   color: var(--text-tertiary);
   border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 table td {
@@ -369,6 +417,26 @@ table td {
   font-size: 0.875rem;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+/* Utilidades de alineación: aplicar la MISMA clase al <th> y a los <td>
+   de una misma columna para que el título y el contenido queden alineados. */
+table th.text-center,
+table td.text-center {
+  text-align: center;
+}
+
+table th.text-right,
+table td.text-right {
+  text-align: right;
+}
+
+/* Columnas de acciones: centra badges y evita que el título quede
+   desalineado del contenido cuando la celda es más angosta que la palabra
+   del encabezado (p. ej. "ACCIONES" en mayúsculas). */
+table td.text-center > .badge {
+  display: inline-flex;
 }
 
 table tr:last-child td {
@@ -1435,6 +1503,61 @@ table tr:hover td {
   padding: var(--space-lg);
 }
 
+/* --- Fila de gráficos comparativos (Origen de Llamados / Área de Origen) --- */
+.reports-charts-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  align-items: start;
+}
+
+/* Si solo hay un gráfico con datos disponibles, que ocupe todo el ancho */
+.reports-charts-row > .report-chart-card:only-child {
+  grid-column: 1 / -1;
+}
+
+/* --- Chart Type Toggle (pastel / barras / líneas) --- */
+.chart-type-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.chart-type-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.chart-type-btn:hover {
+  color: var(--text-secondary);
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.chart-type-btn--active {
+  background: var(--bg-card);
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.chart-type-btn--active:hover {
+  color: var(--color-primary);
+}
+
 /* --- Mobile Responsive Breakpoints --- */
 
 /* Tablet */
@@ -1496,6 +1619,11 @@ table tr:hover td {
 
   .report-chart-card {
     padding: var(--space-md);
+  }
+
+  .reports-charts-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
   }
 
   .table-header-row {
