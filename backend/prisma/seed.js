@@ -16,8 +16,8 @@ const {
   DEFAULT_STANDARD_QUANTITY,
 } = require("../src/modules/crashCarts/defaultComposition");
 
-const AREA_NAME = "Área de referencia (seed)";
-const CART_NAME = "Carro de referencia (seed)";
+const AREA_NAME = "Área de referencia";
+const CART_NAME = "Carro de referencia";
 
 async function main() {
   const area = await prisma.area.upsert({

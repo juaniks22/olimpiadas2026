@@ -190,6 +190,7 @@ function ManageAreaModal({ area, token, API_URL, onClose, onChanged }) {
 
   const [carts, setCarts] = useState(null); // null = cargando
   const [qtyDraft, setQtyDraft] = useState({}); // { [itemId]: valorEditado } — se guarda todo junto
+  const [showCart, setShowCart] = useState(false); // sección "Carro de paro del área" colapsada al abrir
 
   const flash = (m) => { setMsg(m); setErr(''); };
   const fail = (m) => { setErr(m); setMsg(''); };
@@ -377,34 +378,42 @@ function ManageAreaModal({ area, token, API_URL, onClose, onChanged }) {
           </div>
         </section>
 
-        {/* --- Stock del carro de paro --- */}
+        {/* --- Carro de paro del área (desplegable) --- */}
         <section>
-          <h3 style={{ marginBottom: 8 }}>Carro de paro del área</h3>
-          {carts === null ? (
-            <p style={{ color: 'var(--text-tertiary)' }}>Cargando...</p>
-          ) : carts.length === 0 ? (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ color: 'var(--text-tertiary)' }}>
-                Esta área no tiene carro de paro (dato viejo: las áreas nuevas ya se crean con uno).
-              </span>
-              <button className="btn btn-primary" onClick={createStandardCart} disabled={busy}>
-                Crear carro estándar (28 medicamentos)
-              </button>
+          <button type="button" className="btn btn-sm btn-secondary" onClick={() => setShowCart((s) => !s)}>
+            {showCart ? '▾ Ocultar carro de paro del área' : '▸ Ver carro de paro del área'}
+          </button>
+
+          {showCart && (
+            <div style={{ marginTop: 14 }}>
+              <h3 style={{ marginBottom: 8 }}>Carro de paro del área</h3>
+              {carts === null ? (
+                <p style={{ color: 'var(--text-tertiary)' }}>Cargando...</p>
+              ) : carts.length === 0 ? (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ color: 'var(--text-tertiary)' }}>
+                    Esta área no tiene carro de paro (dato viejo: las áreas nuevas ya se crean con uno).
+                  </span>
+                  <button className="btn btn-primary" onClick={createStandardCart} disabled={busy}>
+                    Crear carro estándar (28 medicamentos)
+                  </button>
+                </div>
+              ) : (
+                carts.map((cart) => (
+                  <CartStockEditor
+                    key={cart.id}
+                    cart={cart}
+                    busy={busy}
+                    qtyDraft={qtyDraft}
+                    onQtyChange={(itemId, value) => setQtyDraft((d) => ({ ...d, [itemId]: value }))}
+                    onLoadDefault={() => loadDefault(cart.id)}
+                    onReactivate={() => reactivateCart(cart.id)}
+                    onRemoveItem={removeItem}
+                    onAddItem={(item) => addItem(cart.id, item)}
+                  />
+                ))
+              )}
             </div>
-          ) : (
-            carts.map((cart) => (
-              <CartStockEditor
-                key={cart.id}
-                cart={cart}
-                busy={busy}
-                qtyDraft={qtyDraft}
-                onQtyChange={(itemId, value) => setQtyDraft((d) => ({ ...d, [itemId]: value }))}
-                onLoadDefault={() => loadDefault(cart.id)}
-                onReactivate={() => reactivateCart(cart.id)}
-                onRemoveItem={removeItem}
-                onAddItem={(item) => addItem(cart.id, item)}
-              />
-            ))
           )}
         </section>
 
@@ -434,7 +443,7 @@ function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onR
   return (
     <div style={{ border: '1px solid var(--border, #e5e7eb)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-        <strong>{cart.name}</strong>
+        <strong>{cart.name.replace(/\s*\(seed\)\s*$/i, '')}</strong>
         <span className={`badge ${outOfService ? 'badge-danger' : 'badge-success'}`}>
           {outOfService ? 'Fuera de servicio' : 'En operación'}
         </span>
