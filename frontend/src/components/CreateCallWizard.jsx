@@ -215,6 +215,16 @@ export default function CreateCallWizard({ onClose, onCreated }) {
             return `El tiempo de "${times[i+1].label}" no puede ser anterior a "${times[i].label}".`;
           }
         }
+
+        // Guarda contra errores de tipeo en el datetime picker (ej. día
+        // equivocado): un llamado es inmutable una vez guardado, así que
+        // un salto irreal acá queda pegado para siempre en las métricas.
+        if (callReceivedAt && teamArrivalAt) {
+          const gapMinutes = (new Date(teamArrivalAt) - new Date(callReceivedAt)) / 60000;
+          if (gapMinutes > 180) {
+            return `La llegada del equipo quedó a ${Math.round(gapMinutes / 60)}hs de la recepción. Revisá la fecha y hora cargadas (¿día equivocado?).`;
+          }
+        }
         return null;
       }
       case 4: {
