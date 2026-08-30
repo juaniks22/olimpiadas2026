@@ -12,93 +12,81 @@ async function readError(res, fallback) {
 }
 
 const errorBoxStyle = {
-  padding: '12px', background: 'rgba(244, 63, 94, 0.1)', color: '#F43F5E',
-  borderRadius: '8px', marginBottom: '16px', fontSize: '0.875rem', whiteSpace: 'pre-line',
+  padding: '12px',
+  background: 'rgba(244, 63, 94, 0.1)',
+  color: '#F43F5E',
+  borderRadius: '8px',
+  marginBottom: '16px',
+  fontSize: '0.875rem',
+  whiteSpace: 'pre-line',
 };
-const okBoxStyle = { ...errorBoxStyle, background: 'rgba(34,197,94,0.12)', color: '#16A34A' };
 
-const EyeIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-const EyeOffIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c6.5 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3.5 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-    <line x1="2" y1="2" x2="22" y2="22" />
-  </svg>
-);
-
-// Campo de contraseña con ojito de ver/ocultar DENTRO del input.
-function PasswordField({ id, value, onChange, placeholder, show, onToggle, required }) {
-  return (
-    <div style={{ position: 'relative', flex: 1 }}>
-      <input
-        id={id}
-        className="input"
-        type={show ? 'text' : 'password'}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        required={required}
-        minLength={8}
-        maxLength={12}
-        style={{ width: '100%', paddingRight: 40 }}
-      />
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-label={show ? 'Ocultar clave' : 'Ver clave'}
-        title={show ? 'Ocultar clave' : 'Ver clave'}
-        style={{
-          position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
-          background: 'none', border: 'none', cursor: 'pointer', padding: 2,
-          display: 'flex', alignItems: 'center', color: 'var(--text-tertiary)',
-        }}
-      >
-        {show ? <EyeOffIcon /> : <EyeIcon />}
-      </button>
-    </div>
-  );
-}
-
-export default function UsersPage() {
+export default function AreasPage() {
   const { token, API_URL } = useContext(AuthContext);
-  const [users, setUsers] = useState([]);
+  const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState('');
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [manageUser, setManageUser] = useState(null);
+  const [createName, setCreateName] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [creating, setCreating] = useState(false);
 
-  const fetchUsers = useCallback(async () => {
+  const [manageArea, setManageArea] = useState(null);
+
+  const fetchAreas = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/users`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${API_URL}/api/areas`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) {
         const data = await res.json();
-        setUsers(Array.isArray(data) ? data : data.data || []);
+        setAreas(Array.isArray(data) ? data : data.data || []);
         setListError('');
       } else {
-        setListError(await readError(res, 'No se pudieron cargar las cuentas'));
+        setListError(await readError(res, 'No se pudieron cargar las áreas'));
       }
     } catch (err) {
-      console.error('Error fetching users:', err);
-      setListError('Error de conexión al cargar las cuentas');
+      console.error('Error fetching areas:', err);
+      setListError('Error de conexión al cargar las áreas');
     } finally {
       setLoading(false);
     }
   }, [API_URL, token]);
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => { fetchAreas(); }, [fetchAreas]);
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setCreateError('');
+    setCreating(true);
+    try {
+      const res = await fetch(`${API_URL}/api/areas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: createName.trim() }),
+      });
+      if (!res.ok) {
+        setCreateError(await readError(res, 'No se pudo crear el área'));
+        return;
+      }
+      setCreateOpen(false);
+      setCreateName('');
+      fetchAreas();
+    } catch (err) {
+      console.error('Error creating area:', err);
+      setCreateError('Error de conexión');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <>
       <div className="page-header">
-        <h2>Gestión de Cuentas</h2>
-        <button id="btn-create-user" className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-          + Nueva Cuenta
+        <h2>Gestión de Áreas</h2>
+        <button id="btn-create-area" className="btn btn-primary" onClick={() => { setCreateName(''); setCreateError(''); setCreateOpen(true); }}>
+          + Nueva Área
         </button>
       </div>
 
@@ -109,34 +97,28 @@ export default function UsersPage() {
           <table>
             <thead>
               <tr>
-                <th>Usuario</th>
-                <th className="text-center">Rol</th>
+                <th>Nombre</th>
                 <th className="text-center">Estado</th>
                 <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Cargando...</td></tr>
-              ) : users.length === 0 ? (
-                <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>No hay cuentas registradas</td></tr>
+                <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>Cargando...</td></tr>
+              ) : areas.length === 0 ? (
+                <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-tertiary)' }}>No hay áreas registradas</td></tr>
               ) : (
-                users.map((u) => (
-                  <tr key={u.id}>
-                    <td style={{ fontWeight: 600 }}>{u.username}</td>
+                areas.map((area) => (
+                  <tr key={area.id}>
+                    <td style={{ fontWeight: 600 }}>{area.name}</td>
                     <td className="text-center">
-                      <span className={`badge ${u.role === 'ADMIN' ? 'badge-info' : 'badge-warning'}`}>
-                        {u.role === 'ADMIN' ? 'Administrador' : 'Genérico'}
+                      <span className={`badge ${area.isActive ? 'badge-success' : 'badge-danger'}`}>
+                        <span className={`status-dot ${area.isActive ? 'active' : 'inactive'}`}></span>
+                        {area.isActive ? 'Activa' : 'Inactiva'}
                       </span>
                     </td>
                     <td className="text-center">
-                      <span className={`badge ${u.isActive ? 'badge-success' : 'badge-danger'}`}>
-                        <span className={`status-dot ${u.isActive ? 'active' : 'inactive'}`}></span>
-                        {u.isActive ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="text-center">
-                      <button className="btn btn-sm btn-secondary" onClick={() => setManageUser(u)}>
+                      <button className="btn btn-sm btn-secondary" onClick={() => setManageArea(area)}>
                         Gestionar
                       </button>
                     </td>
@@ -149,18 +131,44 @@ export default function UsersPage() {
       </div>
 
       {createOpen && (
-        <CreateUserModal
-          token={token} API_URL={API_URL}
-          onClose={() => setCreateOpen(false)}
-          onCreated={fetchUsers}
-        />
+        <div className="modal-overlay" onClick={() => setCreateOpen(false)}>
+          <div className="modal slide-up" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Nueva Área</h2>
+              <button className="btn-icon" onClick={() => setCreateOpen(false)}>✕</button>
+            </div>
+            {createError && <div style={errorBoxStyle}>{createError}</div>}
+            <form onSubmit={handleCreate}>
+              <div className="input-group">
+                <label htmlFor="area-name">Nombre del Área</label>
+                <input
+                  id="area-name"
+                  className="input"
+                  type="text"
+                  placeholder="Ej. Terapia Intensiva"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn btn-secondary" onClick={() => setCreateOpen(false)}>Cancelar</button>
+                <button id="btn-save-area" type="submit" className="btn btn-primary" disabled={creating}>
+                  {creating ? 'Creando...' : 'Crear área'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
-      {manageUser && (
-        <ManageUserModal
-          user={manageUser} token={token} API_URL={API_URL}
-          onClose={() => setManageUser(null)}
-          onChanged={fetchUsers}
+      {manageArea && (
+        <ManageAreaModal
+          area={manageArea}
+          token={token}
+          API_URL={API_URL}
+          onClose={() => setManageArea(null)}
+          onChanged={fetchAreas}
         />
       )}
     </>
@@ -168,261 +176,349 @@ export default function UsersPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Alta de cuenta (siempre rol GENERIC). Clave manual o generada automáticamente.
+// Modal de gestión de un área: nombre, estado (activar/desactivar), eliminar,
+// y gestión del stock (composición estándar) del carro de paro del área.
 // ---------------------------------------------------------------------------
-function CreateUserModal({ token, API_URL, onClose, onCreated }) {
+function ManageAreaModal({ area, token, API_URL, onClose, onChanged }) {
   const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+
+  const [name, setName] = useState(area.name);
+  const [isActive, setIsActive] = useState(area.isActive);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const generate = async () => {
-    setError('');
-    try {
-      const res = await fetch(`${API_URL}/api/users/generate-password`, { method: 'POST', headers: authHeaders });
-      if (!res.ok) return setError(await readError(res, 'No se pudo generar la clave'));
-      const data = await res.json();
-      setPassword(data.password || '');
-      setShowPassword(true);
-    } catch {
-      setError('Error de conexión');
-    }
-  };
+  const [carts, setCarts] = useState(null); // null = cargando
+  const [qtyDraft, setQtyDraft] = useState({}); // { [itemId]: valorEditado } — se guarda todo junto
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setError('');
+  const flash = (m) => { setMsg(m); setErr(''); };
+  const fail = (m) => { setErr(m); setMsg(''); };
+
+  const loadCarts = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/crash-carts?areaId=${area.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const list = res.ok ? await res.json() : [];
+      // Traer el detalle (composición) de cada carro.
+      const detailed = await Promise.all(
+        (Array.isArray(list) ? list : []).map(async (c) => {
+          const d = await fetch(`${API_URL}/api/crash-carts/${c.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          return d.ok ? d.json() : c;
+        })
+      );
+      setCarts(detailed);
+      setQtyDraft({}); // datos frescos → limpiar borradores
+    } catch (e) {
+      console.error(e);
+      setCarts([]);
+      fail('Error al cargar los carros del área');
+    }
+  }, [API_URL, token, area.id]);
+
+  // Ítems cuya cantidad estándar fue editada y todavía no se guardó.
+  const pendingQty = (carts || []).flatMap((cart) => cart.items || []).filter(
+    (it) => qtyDraft[it.id] !== undefined && String(qtyDraft[it.id]) !== String(it.standardQuantity)
+  );
+
+  const saveAllQty = async () => {
+    if (!pendingQty.length) return;
     setBusy(true);
     try {
-      const res = await fetch(`${API_URL}/api/users`, {
-        method: 'POST', headers: authHeaders,
-        body: JSON.stringify({ username: username.trim(), password }),
-      });
-      if (!res.ok) {
-        setError(await readError(res, 'Error al crear la cuenta'));
-        return;
+      for (const it of pendingQty) {
+        const res = await fetch(`${API_URL}/api/crash-cart-items/${it.id}`, {
+          method: 'PATCH', headers: authHeaders,
+          body: JSON.stringify({ standardQuantity: Number(qtyDraft[it.id]) }),
+        });
+        if (!res.ok) return fail(await readError(res, `No se pudo guardar "${it.name}"`));
       }
-      onCreated();
+      flash(`${pendingQty.length} cantidad(es) actualizada(s)`);
+      await loadCarts();
+    } finally { setBusy(false); }
+  };
+
+  useEffect(() => { loadCarts(); }, [loadCarts]);
+
+  const saveName = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/areas/${area.id}`, {
+        method: 'PATCH', headers: authHeaders, body: JSON.stringify({ name: name.trim() }),
+      });
+      if (!res.ok) return fail(await readError(res, 'No se pudo guardar el nombre'));
+      flash('Nombre actualizado');
+      onChanged();
+    } finally { setBusy(false); }
+  };
+
+  const toggleStatus = async () => {
+    setBusy(true);
+    try {
+      let res;
+      if (isActive) {
+        res = await fetch(`${API_URL}/api/areas/${area.id}/deactivate`, { method: 'POST', headers: authHeaders });
+      } else {
+        res = await fetch(`${API_URL}/api/areas/${area.id}`, { method: 'PATCH', headers: authHeaders, body: JSON.stringify({ isActive: true }) });
+      }
+      if (!res.ok) return fail(await readError(res, 'No se pudo cambiar el estado'));
+      setIsActive(!isActive);
+      flash(isActive ? 'Área desactivada' : 'Área reactivada');
+      onChanged();
+    } finally { setBusy(false); }
+  };
+
+  const removeArea = async () => {
+    if (!confirm(`¿Eliminar definitivamente el área "${area.name}"?\n\nSolo se puede si no tiene llamados ni carros de paro asociados. No se puede deshacer.`)) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/areas/${area.id}`, { method: 'DELETE', headers: authHeaders });
+      if (!res.ok) return fail(await readError(res, 'No se pudo eliminar el área'));
+      onChanged();
       onClose();
-    } catch (err) {
-      console.error('Error creating user:', err);
-      setError('Error de conexión');
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
+  };
+
+  // Todo carro nace con la composición estándar (el backend la siembra siempre).
+  // Solo se usa como recuperación si un área quedó sin carro.
+  const createStandardCart = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/crash-carts`, {
+        method: 'POST', headers: authHeaders,
+        body: JSON.stringify({ name: `Carro - ${area.name}`, areaId: area.id }),
+      });
+      if (!res.ok) return fail(await readError(res, 'No se pudo crear el carro'));
+      flash('Carro creado con la composición estándar (28 medicamentos)');
+      await loadCarts();
+    } finally { setBusy(false); }
+  };
+
+  const loadDefault = async (cartId) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/crash-carts/${cartId}/load-default-composition`, { method: 'POST', headers: authHeaders });
+      if (!res.ok) return fail(await readError(res, 'No se pudo cargar la composición estándar'));
+      flash('Composición estándar cargada (28 medicamentos)');
+      await loadCarts();
+    } finally { setBusy(false); }
+  };
+
+  const reactivateCart = async (cartId) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/crash-carts/${cartId}/reactivate`, { method: 'POST', headers: authHeaders });
+      if (!res.ok) return fail(await readError(res, 'No se pudo reactivar el carro'));
+      flash('Carro reactivado (En operación)');
+      await loadCarts();
+    } finally { setBusy(false); }
+  };
+
+  const removeItem = async (itemId) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/crash-cart-items/${itemId}`, { method: 'DELETE', headers: authHeaders });
+      if (!res.ok) return fail(await readError(res, 'No se pudo quitar el ítem'));
+      flash('Ítem quitado');
+      await loadCarts();
+    } finally { setBusy(false); }
+  };
+
+  const addItem = async (cartId, item) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/api/crash-cart-items`, {
+        method: 'POST', headers: authHeaders,
+        body: JSON.stringify({
+          crashCartId: cartId,
+          name: item.name.trim(),
+          standardQuantity: Number(item.standardQuantity) || 1,
+          unit: item.unit.trim() || null,
+        }),
+      });
+      if (!res.ok) return fail(await readError(res, 'No se pudo agregar el ítem'));
+      flash('Ítem agregado');
+      await loadCarts();
+      return true;
+    } finally { setBusy(false); }
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal slide-up" onClick={(e) => e.stopPropagation()}>
+      <div className="modal slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720, width: '95%' }}>
         <div className="modal-header">
-          <h2>Nueva Cuenta</h2>
+          <h2>Gestionar área: {area.name}</h2>
           <button className="btn-icon" onClick={onClose}>✕</button>
         </div>
 
-        {error && <div style={errorBoxStyle}>{error}</div>}
+        {msg && <div style={{ ...errorBoxStyle, background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>{msg}</div>}
+        {err && <div style={errorBoxStyle}>{err}</div>}
 
-        <form onSubmit={submit}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-            <div className="input-group">
-              <label htmlFor="user-username">Nombre de usuario</label>
-              <input
-                id="user-username" className="input" type="text" placeholder="Ej. jpiso"
-                value={username} onChange={(e) => setUsername(e.target.value)} required
-              />
-            </div>
-
-            <div className="input-group">
-              <label htmlFor="user-password">Clave</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <PasswordField
-                  id="user-password"
-                  placeholder="8-12 caract.: mayús, minús, número y símbolo"
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                  show={showPassword} onToggle={() => setShowPassword((s) => !s)}
-                  required
-                />
-                <button type="button" className="btn btn-secondary" onClick={generate}>Generar</button>
-              </div>
-              <small style={{ color: 'var(--text-tertiary)' }}>
-                "Generar" crea una clave segura automáticamente. Copiala antes de guardar.
-              </small>
+        {/* --- Datos y estado --- */}
+        <section style={{ marginBottom: 20 }}>
+          <h3 style={{ marginBottom: 8 }}>Datos del área</h3>
+          <div className="input-group">
+            <label htmlFor="mng-area-name">Nombre</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input id="mng-area-name" className="input" value={name} onChange={(e) => setName(e.target.value)} />
+              <button className="btn btn-secondary" onClick={saveName} disabled={busy || name.trim() === area.name}>Guardar</button>
             </div>
           </div>
-
-          <div className="modal-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-            <button id="btn-save-user" type="submit" className="btn btn-primary" disabled={busy}>
-              {busy ? 'Creando...' : 'Crear cuenta'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+            <span className={`badge ${isActive ? 'badge-success' : 'badge-danger'}`}>
+              <span className={`status-dot ${isActive ? 'active' : 'inactive'}`}></span>
+              {isActive ? 'Activa' : 'Inactiva'}
+            </span>
+            <button className={`btn btn-sm ${isActive ? 'btn-secondary' : 'btn-primary'}`} onClick={toggleStatus} disabled={busy}>
+              {isActive ? 'Desactivar área' : 'Reactivar área'}
             </button>
+            <button className="btn btn-sm btn-danger" onClick={removeArea} disabled={busy}>Eliminar área</button>
           </div>
-        </form>
+        </section>
+
+        {/* --- Stock del carro de paro --- */}
+        <section>
+          <h3 style={{ marginBottom: 8 }}>Carro de paro del área</h3>
+          {carts === null ? (
+            <p style={{ color: 'var(--text-tertiary)' }}>Cargando...</p>
+          ) : carts.length === 0 ? (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ color: 'var(--text-tertiary)' }}>
+                Esta área no tiene carro de paro (dato viejo: las áreas nuevas ya se crean con uno).
+              </span>
+              <button className="btn btn-primary" onClick={createStandardCart} disabled={busy}>
+                Crear carro estándar (28 medicamentos)
+              </button>
+            </div>
+          ) : (
+            carts.map((cart) => (
+              <CartStockEditor
+                key={cart.id}
+                cart={cart}
+                busy={busy}
+                qtyDraft={qtyDraft}
+                onQtyChange={(itemId, value) => setQtyDraft((d) => ({ ...d, [itemId]: value }))}
+                onLoadDefault={() => loadDefault(cart.id)}
+                onReactivate={() => reactivateCart(cart.id)}
+                onRemoveItem={removeItem}
+                onAddItem={(item) => addItem(cart.id, item)}
+              />
+            ))
+          )}
+        </section>
+
+        <div className="modal-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>Cerrar</button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={saveAllQty}
+            disabled={busy || pendingQty.length === 0}
+          >
+            {pendingQty.length ? `Guardar (${pendingQty.length})` : 'Guardar'}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Gestión de una cuenta: username, estado, clave, eliminación.
-// La cuenta ADMIN solo permite cambiar la clave.
-// ---------------------------------------------------------------------------
-function ManageUserModal({ user, token, API_URL, onClose, onChanged }) {
-  const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-  const isAdmin = user.role === 'ADMIN';
+function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onReactivate, onRemoveItem, onAddItem }) {
+  const items = cart.items || [];
+  const [adding, setAdding] = useState(false);
+  const [newItem, setNewItem] = useState({ name: '', standardQuantity: 1, unit: '' });
 
-  const [username, setUsername] = useState(user.username);
-  const [isActive, setIsActive] = useState(user.isActive);
-  const [newPass, setNewPass] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [msg, setMsg] = useState('');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const flash = (m) => { setMsg(m); setErr(''); };
-  const fail = (m) => { setErr(m); setMsg(''); };
-
-  const usernameChanged = !isAdmin && username.trim() && username.trim() !== user.username;
-  const hasNewPass = newPass.length > 0;
-  const dirty = usernameChanged || hasNewPass;
-
-  const handleSave = async () => {
-    if (!dirty) return;
-    if (hasNewPass && (newPass.length < 8 || newPass.length > 12)) {
-      return fail('La clave debe tener entre 8 y 12 caracteres');
-    }
-    setBusy(true);
-    try {
-      const done = [];
-      if (usernameChanged) {
-        const res = await fetch(`${API_URL}/api/users/${user.id}`, {
-          method: 'PATCH', headers: authHeaders, body: JSON.stringify({ username: username.trim() }),
-        });
-        if (!res.ok) return fail(await readError(res, 'No se pudo cambiar el nombre de usuario'));
-        done.push('nombre de usuario');
-      }
-      if (hasNewPass) {
-        const res = await fetch(`${API_URL}/api/users/${user.id}/reset-password`, {
-          method: 'POST', headers: authHeaders, body: JSON.stringify({ password: newPass }),
-        });
-        if (!res.ok) return fail(await readError(res, 'No se pudo cambiar la clave'));
-        done.push('clave');
-        setNewPass('');
-        setShowPass(false);
-      }
-      flash(`Actualizado: ${done.join(' y ')}.`);
-      onChanged();
-    } finally { setBusy(false); }
-  };
-
-  const toggleActive = async () => {
-    if (!confirm(`¿${isActive ? 'Desactivar' : 'Activar'} la cuenta "${user.username}"?`)) return;
-    setBusy(true);
-    try {
-      const endpoint = isActive ? 'deactivate' : 'reactivate';
-      const res = await fetch(`${API_URL}/api/users/${user.id}/${endpoint}`, { method: 'POST', headers: authHeaders });
-      if (!res.ok) return fail(await readError(res, 'No se pudo cambiar el estado'));
-      setIsActive(!isActive);
-      flash(isActive ? 'Cuenta desactivada' : 'Cuenta activada');
-      onChanged();
-    } finally { setBusy(false); }
-  };
-
-  const generatePass = async () => {
-    setErr('');
-    try {
-      const res = await fetch(`${API_URL}/api/users/generate-password`, { method: 'POST', headers: authHeaders });
-      if (!res.ok) return fail(await readError(res, 'No se pudo generar la clave'));
-      const data = await res.json();
-      setNewPass(data.password || '');
-      setShowPass(true);
-    } catch { fail('Error de conexión'); }
-  };
-
-  const removeUser = async () => {
-    if (!confirm(`¿Eliminar definitivamente la cuenta "${user.username}"?\n\nSolo se puede si no tiene llamados cargados. No se puede deshacer.`)) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`${API_URL}/api/users/${user.id}`, { method: 'DELETE', headers: authHeaders });
-      if (!res.ok) return fail(await readError(res, 'No se pudo eliminar la cuenta'));
-      onChanged();
-      onClose();
-    } finally { setBusy(false); }
-  };
+  const outOfService = cart.status === 'OUT_OF_SERVICE';
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560, width: '95%' }}>
-        <div className="modal-header">
-          <h2>Gestionar cuenta: {user.username}</h2>
-          <button className="btn-icon" onClick={onClose}>✕</button>
-        </div>
-
-        {msg && <div style={okBoxStyle}>{msg}</div>}
-        {err && <div style={errorBoxStyle}>{err}</div>}
-
-        {isAdmin && (
-          <div style={{ ...errorBoxStyle, background: 'rgba(59,130,246,0.1)', color: '#2563EB' }}>
-            La cuenta Administradora no se puede eliminar ni desactivar. Solo se permite cambiar su clave.
-          </div>
+    <div style={{ border: '1px solid var(--border, #e5e7eb)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+        <strong>{cart.name}</strong>
+        <span className={`badge ${outOfService ? 'badge-danger' : 'badge-success'}`}>
+          {outOfService ? 'Fuera de servicio' : 'En operación'}
+        </span>
+        {outOfService && (
+          <button className="btn btn-sm btn-primary" onClick={onReactivate} disabled={busy}>Reactivar carro</button>
         )}
+      </div>
 
-        {!isAdmin && (
-          <>
-            <section style={{ marginBottom: 18 }}>
-              <h3 style={{ marginBottom: 8 }}>Nombre de usuario</h3>
-              <input
-                className="input"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                style={usernameChanged ? { borderColor: '#F59E0B' } : undefined}
-              />
-            </section>
-
-            <section style={{ marginBottom: 18 }}>
-              <h3 style={{ marginBottom: 8 }}>Estado</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span className={`badge ${isActive ? 'badge-success' : 'badge-danger'}`}>
-                  <span className={`status-dot ${isActive ? 'active' : 'inactive'}`}></span>
-                  {isActive ? 'Activo' : 'Inactivo'}
-                </span>
-                <button className={`btn btn-sm ${isActive ? 'btn-secondary' : 'btn-primary'}`} onClick={toggleActive} disabled={busy}>
-                  {isActive ? 'Desactivar cuenta' : 'Activar cuenta'}
-                </button>
-              </div>
-            </section>
-          </>
-        )}
-
-        <section style={{ marginBottom: 18 }}>
-          <h3 style={{ marginBottom: 8 }}>Cambiar clave</h3>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <PasswordField
-              placeholder="Dejar vacío para no cambiarla"
-              value={newPass} onChange={(e) => setNewPass(e.target.value)}
-              show={showPass} onToggle={() => setShowPass((s) => !s)}
-            />
-            <button className="btn btn-secondary" onClick={generatePass} disabled={busy}>Generar</button>
-          </div>
-        </section>
-
-        {!isAdmin && (
-          <section>
-            <h3 style={{ marginBottom: 8 }}>Eliminar cuenta</h3>
-            <button className="btn btn-sm btn-danger" onClick={removeUser} disabled={busy}>
-              Eliminar cuenta
-            </button>
-          </section>
-        )}
-
-        <div className="modal-actions">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>Cerrar</button>
-          <button type="button" className="btn btn-primary" onClick={handleSave} disabled={busy || !dirty}>
-            Guardar
+      {items.length === 0 ? (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span style={{ color: 'var(--text-tertiary)' }}>Sin composición cargada.</span>
+          <button className="btn btn-sm btn-primary" onClick={onLoadDefault} disabled={busy}>
+            Cargar composición estándar (28 medicamentos)
           </button>
         </div>
-      </div>
+      ) : (
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: 40, textAlign: 'right' }}>#</th>
+                <th>Ítem</th>
+                <th className="text-center" style={{ width: 120 }}>Cant. estándar</th>
+                <th className="text-center">Unidad</th>
+                <th className="text-center" style={{ width: 100 }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it, i) => {
+                const draft = qtyDraft[it.id] ?? String(it.standardQuantity);
+                const changed = draft !== String(it.standardQuantity);
+                return (
+                <tr key={it.id}>
+                  <td style={{ textAlign: 'right', color: 'var(--text-tertiary)' }}>{i + 1}</td>
+                  <td>{it.name}</td>
+                  <td className="text-center">
+                    <input
+                      className="input input-qty"
+                      type="number"
+                      min={0}
+                      style={changed ? { borderColor: '#F59E0B' } : undefined}
+                      value={draft}
+                      onChange={(e) => onQtyChange(it.id, e.target.value)}
+                    />
+                  </td>
+                  <td className="text-center">{it.unit || '—'}</td>
+                  <td className="text-center">
+                    <button className="btn btn-sm btn-danger" onClick={() => onRemoveItem(it.id)} disabled={busy}>Quitar</button>
+                  </td>
+                </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {adding ? (
+        <form
+          style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10, alignItems: 'flex-end' }}
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const ok = await onAddItem(newItem);
+            if (ok) { setNewItem({ name: '', standardQuantity: 1, unit: '' }); setAdding(false); }
+          }}
+        >
+          <div className="input-group" style={{ margin: 0 }}>
+            <label>Ítem</label>
+            <input className="input" required value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="Ej. Adrenalina" />
+          </div>
+          <div className="input-group" style={{ margin: 0 }}>
+            <label>Cantidad</label>
+            <input className="input input-qty" type="number" min={0} value={newItem.standardQuantity} onChange={(e) => setNewItem({ ...newItem, standardQuantity: e.target.value })} />
+          </div>
+          <div className="input-group" style={{ margin: 0 }}>
+            <label>Unidad</label>
+            <input className="input" style={{ width: 110 }} value={newItem.unit} onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })} placeholder="ampolla" />
+          </div>
+          <button type="submit" className="btn btn-sm btn-primary" disabled={busy}>Agregar</button>
+          <button type="button" className="btn btn-sm btn-secondary" onClick={() => setAdding(false)}>Cancelar</button>
+        </form>
+      ) : (
+        <button className="btn btn-sm btn-secondary" style={{ marginTop: 10 }} onClick={() => setAdding(true)}>+ Agregar ítem</button>
+      )}
     </div>
   );
 }

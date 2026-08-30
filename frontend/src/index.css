@@ -340,6 +340,16 @@ h4 { font-size: 1.125rem; }
   box-shadow: 0 0 0 3px var(--border-input-focus);
 }
 
+/* Inputs numéricos compactos (ej. cantidades de stock). Se usa type="text"
+   + inputMode="numeric" en vez de type="number": así nunca aparecen las
+   flechitas del spinner nativo, en ningún navegador, y en celular sigue
+   apareciendo el teclado numérico. */
+.input-qty {
+  width: 90px;
+  padding: 8px 12px;
+  text-align: center;
+}
+
 /* Los <select> usan una flecha nativa del navegador que no se puede
    alinear con precisión. La reemplazamos por un chevron propio,
    bien centrado, y ocultamos la nativa. */

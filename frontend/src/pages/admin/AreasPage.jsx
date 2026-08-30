@@ -472,12 +472,16 @@ function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onR
                   <td>{it.name}</td>
                   <td className="text-center">
                     <input
-                      className="input"
-                      type="number"
-                      min={0}
-                      style={{ width: 70, textAlign: 'center', ...(changed ? { borderColor: '#F59E0B' } : {}) }}
+                      className="input input-qty"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      style={changed ? { borderColor: '#F59E0B' } : undefined}
                       value={draft}
-                      onChange={(e) => onQtyChange(it.id, e.target.value)}
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/[^0-9]/g, '');
+                        onQtyChange(it.id, digitsOnly);
+                      }}
                     />
                   </td>
                   <td className="text-center">{it.unit || '—'}</td>
@@ -507,7 +511,14 @@ function CartStockEditor({ cart, busy, qtyDraft, onQtyChange, onLoadDefault, onR
           </div>
           <div className="input-group" style={{ margin: 0 }}>
             <label>Cantidad</label>
-            <input className="input" type="number" min={0} style={{ width: 80 }} value={newItem.standardQuantity} onChange={(e) => setNewItem({ ...newItem, standardQuantity: e.target.value })} />
+            <input
+              className="input input-qty"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={newItem.standardQuantity}
+              onChange={(e) => setNewItem({ ...newItem, standardQuantity: e.target.value.replace(/[^0-9]/g, '') })}
+            />
           </div>
           <div className="input-group" style={{ margin: 0 }}>
             <label>Unidad</label>
