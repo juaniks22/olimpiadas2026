@@ -3,13 +3,15 @@ import { AuthContext } from '../../App';
 import FlatpickrRangePicker from '../../components/FlatpickrRangePicker';
 import ReportDetailModal from '../../components/ReportDetailModal';
 import { exportToPdf, exportToCsv } from '../../utils/reportExportUtils';
+import { axisTickFormatter } from '../../utils/chartFormat';
+import { makePieSliceLabel } from '../../components/PieSliceLabel';
+import ChartLegend from '../../components/ChartLegend';
 import {
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   Tooltip,
-  Legend,
   BarChart,
   Bar,
   LineChart,
@@ -18,6 +20,14 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
+
+// Etiqueta interna de las porciones de torta: se reutiliza en todos los
+// gráficos circulares de esta página para mantener el mismo criterio de
+// legibilidad (texto adentro, sin línea guía, oculto en porciones finas).
+const PIE_SLICE_LABEL = makePieSliceLabel({ minPercent: 0.08, maxLength: 10 });
+
+// Total del gráfico de torta, mostrado en el centro del donut.
+const donutTotal = (data) => data.reduce((sum, d) => sum + d.value, 0);
 
 // Iconos para el selector de tipo de gráfico
 const CHART_TYPE_ICONS = {
@@ -85,7 +95,7 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
         <ChartTypeToggle value={chartType} onChange={onChangeChartType} />
       </div>
 
-      <div style={{ width: '100%', height: 280 }}>
+      <div style={{ width: '100%', height: 240 }} className={chartType === 'pie' ? 'chart-donut-wrap' : undefined}>
         <ResponsiveContainer width="100%" height="100%">
           {chartType === 'pie' ? (
             <PieChart>
@@ -93,13 +103,13 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={100}
+                innerRadius={48}
+                outerRadius={82}
                 paddingAngle={4}
                 dataKey="value"
                 stroke="none"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={{ stroke: 'var(--text-tertiary)', strokeWidth: 1 }}
+                label={PIE_SLICE_LABEL}
+                labelLine={false}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
@@ -116,7 +126,6 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                 }}
                 formatter={(value, name) => [`${value} ${unitLabel}`, name]}
               />
-              <Legend wrapperStyle={{ fontSize: '0.8125rem', paddingTop: '12px' }} iconType="circle" iconSize={8} />
             </PieChart>
           ) : chartType === 'bar' ? (
             <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
@@ -127,9 +136,10 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                 axisLine={{ stroke: 'var(--border-card)' }}
                 tickLine={false}
                 interval={0}
-                angle={data.length > 4 ? -20 : 0}
+                angle={data.length > 4 ? -30 : 0}
                 textAnchor={data.length > 4 ? 'end' : 'middle'}
-                height={data.length > 4 ? 50 : 30}
+                height={data.length > 4 ? 56 : 30}
+                tickFormatter={axisTickFormatter(9)}
               />
               <YAxis allowDecimals={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip
@@ -142,6 +152,7 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                   fontSize: '0.8125rem',
                 }}
                 cursor={{ fill: 'var(--bg-input)' }}
+                labelFormatter={(label) => label}
                 formatter={(value) => [`${value} ${unitLabel}`, '']}
               />
               <Bar dataKey="value" radius={[6, 6, 0, 0]}>
@@ -159,9 +170,10 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                 axisLine={{ stroke: 'var(--border-card)' }}
                 tickLine={false}
                 interval={0}
-                angle={data.length > 4 ? -20 : 0}
+                angle={data.length > 4 ? -30 : 0}
                 textAnchor={data.length > 4 ? 'end' : 'middle'}
-                height={data.length > 4 ? 50 : 30}
+                height={data.length > 4 ? 56 : 30}
+                tickFormatter={axisTickFormatter(9)}
               />
               <YAxis allowDecimals={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip
@@ -173,6 +185,7 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   fontSize: '0.8125rem',
                 }}
+                labelFormatter={(label) => label}
                 formatter={(value) => [`${value} ${unitLabel}`, '']}
               />
               <Line
@@ -186,7 +199,14 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
             </LineChart>
           )}
         </ResponsiveContainer>
+        {chartType === 'pie' && (
+          <div className="chart-donut-total">
+            <span className="chart-donut-total__value">{donutTotal(data)}</span>
+            <span className="chart-donut-total__label">{unitLabel}</span>
+          </div>
+        )}
       </div>
+      {chartType === 'pie' && <ChartLegend data={data} colors={colors} unitLabel={unitLabel} />}
     </div>
   );
 }
@@ -727,64 +747,61 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* 4. Gráfico de Torta Recharts */}
-      {pieData.length > 0 && (
-        <div className="card-flat report-chart-card" style={{ marginBottom: 'var(--space-xl)' }}>
-          <div style={{ marginBottom: 'var(--space-md)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Distribución de Llamados</h3>
-            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
-              Proporción de eventos de emergencia, normales y RCE en el período seleccionado.
-            </p>
-          </div>
-
-          <div style={{ width: '100%', height: 280 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={4}
-                  dataKey="value"
-                  stroke="none"
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
-                  labelLine={{ stroke: 'var(--text-tertiary)', strokeWidth: 1 }}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={PIE_COLORS[index % PIE_COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'var(--bg-card)',
-                    borderColor: 'var(--border-card)',
-                    borderRadius: '12px',
-                    color: 'var(--text-primary)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    fontSize: '0.8125rem',
-                  }}
-                  formatter={(value, name) => [`${value} llamados`, name]}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: '0.8125rem', paddingTop: '12px' }}
-                  iconType="circle"
-                  iconSize={8}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {/* 4b. Origen de Llamados y Área de Origen (intercambiable: pastel / barras / líneas) */}
+      {/* 4. Distribución de Llamados / Origen de Llamados / Área de Origen — una sola fila de 3 columnas */}
       <div className="reports-charts-row">
+        {pieData.length > 0 && (
+          <div className="card-flat report-chart-card">
+            <div style={{ marginBottom: 'var(--space-md)' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Distribución de Llamados</h3>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
+                Proporción de eventos de emergencia, normales y RCE en el período seleccionado.
+              </p>
+            </div>
+
+            <div style={{ width: '100%', height: 240 }} className="chart-donut-wrap">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={48}
+                    outerRadius={82}
+                    paddingAngle={4}
+                    dataKey="value"
+                    stroke="none"
+                    label={PIE_SLICE_LABEL}
+                    labelLine={false}
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={PIE_COLORS[index % PIE_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: 'var(--bg-card)',
+                      borderColor: 'var(--border-card)',
+                      borderRadius: '12px',
+                      color: 'var(--text-primary)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      fontSize: '0.8125rem',
+                    }}
+                    formatter={(value, name) => [`${value} llamados`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="chart-donut-total">
+                <span className="chart-donut-total__value">{donutTotal(pieData)}</span>
+                <span className="chart-donut-total__label">llamados</span>
+              </div>
+            </div>
+            <ChartLegend data={pieData} colors={PIE_COLORS} unitLabel="llamados" />
+          </div>
+        )}
+
         <SwitchableDistributionChart
           title="Origen de Llamados"
           subtitle="Comparación entre llamados intrahospitalarios y extrahospitalarios."
