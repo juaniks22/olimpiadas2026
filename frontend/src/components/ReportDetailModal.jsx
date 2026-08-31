@@ -72,7 +72,7 @@ export default function ReportDetailModal({ call, onClose }) {
                   {call.tiempoHallazgoMinutos !== null ? `${call.tiempoHallazgoMinutos} min` : 's/d'}
                 </span>
               </div>
-              <div className="detail-field">
+              <div className="detail-field" style={{ gridColumn: 'span 2' }}>
                 <span className="detail-label">Responsable de Carga</span>
                 <span className="detail-value">{call.cargadoPor || '—'}</span>
               </div>
@@ -137,7 +137,7 @@ export default function ReportDetailModal({ call, onClose }) {
                 <span className="detail-value">{call.estadoPostReanimacion || 'No especificado'}</span>
               </div>
               {call.causaSuspension && (
-                <div className="detail-field" style={{ gridColumn: 'span 2' }}>
+                <div className="detail-field" style={{ gridColumn: 'span 4' }}>
                   <span className="detail-label">Causa de Suspensión</span>
                   <span className="detail-value" style={{ color: 'var(--color-danger)' }}>
                     {call.causaSuspension}
@@ -147,67 +147,70 @@ export default function ReportDetailModal({ call, onClose }) {
             </div>
           </div>
 
-          {/* Section: Desfibrilaciones (si existen) */}
-          {call.defibrillations && call.defibrillations.length > 0 && (
-            <div className="detail-section">
-              <h4 className="detail-section-title">
-                Registro de Desfibrilaciones ({call.defibrillations.length})
-              </h4>
-              <div className="table-container">
-                <table style={{ fontSize: '0.8125rem' }}>
-                  <thead>
-                    <tr>
-                      <th className="text-center">Secuencia</th>
-                      <th className="text-center">Hora</th>
-                      <th className="text-center">Energía</th>
-                      <th className="text-center">Ritmo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {call.defibrillations.map((def, idx) => (
-                      <tr key={def.id || idx}>
-                        <td className="text-center">#{def.sequenceNumber || idx + 1}</td>
-                        <td className="text-center">{formatTimeOnly(def.performedAt)}</td>
-                        <td className="text-center">{def.energyDelivered ? `${def.energyDelivered} J` : 's/d'}</td>
-                        <td className="text-center">{def.rhythm || '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          {/* Section: Desfibrilaciones y Drogas Administradas */}
+          {((call.defibrillations && call.defibrillations.length > 0) || (call.drugsAdministered && call.drugsAdministered.length > 0)) && (
+            <div className="detail-tables-grid">
+              {call.defibrillations && call.defibrillations.length > 0 && (
+                <div className="detail-section">
+                  <h4 className="detail-section-title">
+                    Desfibrilaciones ({call.defibrillations.length})
+                  </h4>
+                  <div className="table-container">
+                    <table style={{ fontSize: '0.75rem' }}>
+                      <thead>
+                        <tr>
+                          <th className="text-center">#</th>
+                          <th className="text-center">Hora</th>
+                          <th className="text-center">Energía</th>
+                          <th className="text-center">Ritmo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {call.defibrillations.map((def, idx) => (
+                          <tr key={def.id || idx}>
+                            <td className="text-center">#{def.sequenceNumber || idx + 1}</td>
+                            <td className="text-center">{formatTimeOnly(def.performedAt)}</td>
+                            <td className="text-center">{def.energyDelivered ? `${def.energyDelivered} J` : 's/d'}</td>
+                            <td className="text-center">{def.rhythm || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
-          {/* Section: Drogas Administradas (si existen) */}
-          {call.drugsAdministered && call.drugsAdministered.length > 0 && (
-            <div className="detail-section">
-              <h4 className="detail-section-title">
-                Fármacos Administrados ({call.drugsAdministered.length})
-              </h4>
-              <div className="table-container">
-                <table style={{ fontSize: '0.8125rem' }}>
-                  <thead>
-                    <tr>
-                      <th>Fármaco</th>
-                      <th className="text-center">Dosis</th>
-                      <th className="text-center">Vía</th>
-                      <th className="text-center">Hora</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {call.drugsAdministered.map((dr, idx) => (
-                      <tr key={dr.id || idx}>
-                        <td style={{ fontWeight: 600 }}>{dr.drugName}</td>
-                        <td className="text-center">
-                          {dr.dose} {dr.unit}
-                        </td>
-                        <td className="text-center">{dr.route || '—'}</td>
-                        <td className="text-center">{formatTimeOnly(dr.administeredAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {call.drugsAdministered && call.drugsAdministered.length > 0 && (
+                <div className="detail-section">
+                  <h4 className="detail-section-title">
+                    Fármacos Administrados ({call.drugsAdministered.length})
+                  </h4>
+                  <div className="table-container">
+                    <table style={{ fontSize: '0.75rem' }}>
+                      <thead>
+                        <tr>
+                          <th>Fármaco</th>
+                          <th className="text-center">Dosis</th>
+                          <th className="text-center">Vía</th>
+                          <th className="text-center">Hora</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {call.drugsAdministered.map((dr, idx) => (
+                          <tr key={dr.id || idx}>
+                            <td style={{ fontWeight: 600 }}>{dr.drugName}</td>
+                            <td className="text-center">
+                              {dr.dose} {dr.unit}
+                            </td>
+                            <td className="text-center">{dr.route || '—'}</td>
+                            <td className="text-center">{formatTimeOnly(dr.administeredAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -46,24 +46,27 @@ const CHART_TYPE_ICONS = {
 };
 
 // 1. Tooltip Personalizado con fondo oscuro
-const CustomTooltip = ({ active, payload, total, unitLabel = 'llamados' }) => {
+const CustomTooltip = ({ active, payload, label, total, unitLabel = 'llamados' }) => {
   if (active && payload && payload.length) {
     const data = payload[0];
-    const percentage = total > 0 ? ((data.value / total) * 100).toFixed(1) : 0;
+    const name = data.payload?.name || label || (data.name !== 'value' ? data.name : '') || 'Item';
+    const value = data.value ?? data.payload?.value ?? 0;
+    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+    const color = data.payload?.fill || data.fill || data.color || data.stroke || 'var(--color-primary)';
 
     return (
       <div className="report-tooltip-card">
         <div className="report-tooltip-header">
           <span
             className="report-tooltip-dot"
-            style={{ backgroundColor: data.payload?.fill || data.color || 'var(--color-primary)' }}
+            style={{ backgroundColor: color }}
           />
           <span className="report-tooltip-name">
-            {data.name}
+            {name}
           </span>
         </div>
         <div className="report-tooltip-body">
-          <span>Cantidad: <strong style={{ color: 'var(--text-primary)' }}>{data.value}</strong> {unitLabel}</span>
+          <span>Cantidad: <strong style={{ color: 'var(--text-primary)' }}>{value}</strong> {unitLabel}</span>
           <span>({percentage}%)</span>
         </div>
       </div>
@@ -134,21 +137,9 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
 
   return (
     <div className="card-flat report-chart-card">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 'var(--space-md)',
-          marginBottom: 'var(--space-md)',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>{title}</h3>
-          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>{subtitle}</p>
-        </div>
-        <ChartTypeToggle value={chartType} onChange={onChangeChartType} />
+      <div className="report-chart-header">
+        <h3 className="report-chart-title">{title}</h3>
+        <p className="report-chart-desc">{subtitle}</p>
       </div>
 
       {chartType === 'pie' ? (
@@ -185,7 +176,7 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
           <CustomLegend data={data} colors={colors} total={total} unitLabel={unitLabel} />
         </>
       ) : chartType === 'bar' ? (
-        <div style={{ width: '100%', height: 260 }}>
+        <div style={{ width: '100%', height: 250 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" vertical={false} />
@@ -214,7 +205,7 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
           </ResponsiveContainer>
         </div>
       ) : (
-        <div style={{ width: '100%', height: 260 }}>
+        <div style={{ width: '100%', height: 250 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" vertical={false} />
@@ -243,6 +234,10 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
           </ResponsiveContainer>
         </div>
       )}
+
+      <div className="report-chart-footer">
+        <ChartTypeToggle value={chartType} onChange={onChangeChartType} />
+      </div>
     </div>
   );
 }
@@ -786,9 +781,9 @@ export default function ReportsPage() {
       <div className="reports-charts-row">
         {pieData.length > 0 && (
           <div className="card-flat report-chart-card">
-            <div style={{ marginBottom: 'var(--space-md)' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Distribución de Llamados</h3>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
+            <div className="report-chart-header">
+              <h3 className="report-chart-title">Distribución de Llamados</h3>
+              <p className="report-chart-desc">
                 Proporción de eventos de emergencia, normales y RCE en el período seleccionado.
               </p>
             </div>
@@ -826,6 +821,9 @@ export default function ReportsPage() {
             </div>
 
             <CustomLegend data={pieData} colors={PIE_COLORS} total={donutTotal(pieData)} unitLabel="llamados" />
+            <div className="report-chart-footer" style={{ visibility: 'hidden' }} aria-hidden="true">
+              <div style={{ height: 28 }} />
+            </div>
           </div>
         )}
 

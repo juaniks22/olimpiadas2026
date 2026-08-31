@@ -1307,39 +1307,48 @@ table tr:hover td {
 
 /* --- Utstein Detail Modal --- */
 .report-detail-modal {
-  max-width: 680px;
+  max-width: 900px;
+  width: 95vw;
+  max-height: 94vh;
+  padding: var(--space-lg) var(--space-xl);
 }
 
 .report-detail-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  margin: var(--space-lg) 0;
+  gap: 12px;
+  margin: 12px 0;
 }
 
 .detail-section {
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
 }
 
 .detail-section-title {
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--text-tertiary);
-  margin-bottom: var(--space-md);
+  margin-bottom: 8px;
 }
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-md);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 18px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 800px) {
+  .detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
   .detail-grid {
     grid-template-columns: 1fr;
   }
@@ -1352,14 +1361,28 @@ table tr:hover td {
 }
 
 .detail-label {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   color: var(--text-tertiary);
+  font-weight: 500;
 }
 
 .detail-value {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-primary);
+  word-break: break-word;
+}
+
+.detail-tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .detail-tables-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Timeline Horizontal */
@@ -1368,8 +1391,7 @@ table tr:hover td {
   align-items: flex-start;
   justify-content: space-between;
   position: relative;
-  padding: 10px 0;
-  overflow-x: auto;
+  padding: 6px 0 2px;
   gap: 8px;
 }
 
@@ -1541,6 +1563,38 @@ table tr:hover td {
 /* --- Responsive Chart Card --- */
 .report-chart-card {
   padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.report-chart-header {
+  display: flex;
+  flex-direction: column;
+  min-height: 64px;
+  margin-bottom: var(--space-md);
+}
+
+.report-chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.report-chart-desc {
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.report-chart-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: var(--space-md);
+  min-height: 44px;
 }
 
 /* --- Fila de gráficos (Distribución / Origen / Área): los 3 en una sola
