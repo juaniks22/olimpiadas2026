@@ -231,7 +231,11 @@ export default function AdminDashboard() {
         <div className="kpi-card">
           <div className="kpi-card-header">
             <span className="kpi-card-label">Llamados ({RANGE_LABELS[range]})</span>
-            <div className="kpi-card-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#3B82F6' }}></div>
+            <div className="kpi-card-icon" style={{ background: 'rgba(59, 130, 246, 0.12)', color: '#3B82F6' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+            </div>
           </div>
           <div className="kpi-card-value">{kpis.totalCalls}</div>
           {callsDeltaText && (
@@ -247,7 +251,12 @@ export default function AdminDashboard() {
         <div className="kpi-card">
           <div className="kpi-card-header">
             <span className="kpi-card-label">T. Promedio Respuesta</span>
-            <div className="kpi-card-icon" style={{ background: 'rgba(244, 63, 94, 0.12)', color: '#F43F5E' }}></div>
+            <div className="kpi-card-icon" style={{ background: 'rgba(244, 63, 94, 0.12)', color: '#F43F5E' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
           </div>
           <div className="kpi-card-value">
             {kpis.avgResponseTime ?? 's/d'}{' '}
@@ -268,7 +277,12 @@ export default function AdminDashboard() {
         <div className="kpi-card">
           <div className="kpi-card-header">
             <span className="kpi-card-label">Tasa de Supervivencia</span>
-            <div className="kpi-card-icon" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}></div>
+            <div className="kpi-card-icon" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z" />
+                <path d="M3.5 12h6l1-2 2 4 1.5-3 1.5 1h5" />
+              </svg>
+            </div>
           </div>
           <div className="kpi-card-value">{kpis.survivalRate}%</div>
           <div className="kpi-card-subtitle" style={{ color: 'var(--text-secondary)' }}>Pacientes con retorno a circulación</div>
@@ -277,7 +291,13 @@ export default function AdminDashboard() {
         <div className="kpi-card">
           <div className="kpi-card-header">
             <span className="kpi-card-label">Carros Bloqueados</span>
-            <div className="kpi-card-icon" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#F59E0B' }}></div>
+            <div className="kpi-card-icon" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#F59E0B' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+                <path d="m3.3 7 8.7 5 8.7-5" />
+                <path d="M12 22V12" />
+              </svg>
+            </div>
           </div>
           <div className="kpi-card-value">
             {kpis.blockedCarts} <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--text-secondary)' }}>/ {kpis.totalCarts}</span>
@@ -300,7 +320,13 @@ export default function AdminDashboard() {
           {blockedCarts.map((cart) => (
             <div key={cart.id} className="attention-item">
               <div className="attention-item-info">
-                <div className="attention-item-icon" style={{ background: 'rgba(244, 63, 94, 0.12)', color: '#F43F5E' }}></div>
+                <div className="attention-item-icon" style={{ background: 'rgba(244, 63, 94, 0.12)', color: '#F43F5E' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </div>
                 <div className="attention-item-text">
                   <h4>{cart.nombre}</h4>
                   <p>

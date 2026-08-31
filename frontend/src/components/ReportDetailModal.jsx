@@ -34,9 +34,6 @@ export default function ReportDetailModal({ call, onClose }) {
               ID: {call.id} • Registrado el {formatDate(call.fecha)}
             </p>
           </div>
-          <button className="btn-icon" onClick={onClose} title="Cerrar ventana">
-            ✕
-          </button>
         </div>
 
         {/* Content Body */}

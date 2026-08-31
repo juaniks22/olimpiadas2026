@@ -457,6 +457,15 @@ table tr:hover td {
   background: var(--color-primary-light);
 }
 
+.table-row-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.table-row-clickable:hover td {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
 /* --- Sidebar Layout --- */
 .app-layout {
   display: flex;
@@ -1550,6 +1559,106 @@ table tr:hover td {
   min-width: 0;
 }
 
+/* --- Modern Pie Chart with Automatic Legend Breakdown --- */
+.report-pie-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 200px) 1fr;
+  gap: var(--space-lg);
+  align-items: center;
+  width: 100%;
+  min-height: 220px;
+}
+
+.report-pie-chart-wrap {
+  width: 100%;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-pie-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.report-pie-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.report-pie-legend-item:hover {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.report-pie-legend-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.report-pie-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.report-pie-legend-name {
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-pie-legend-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.report-pie-legend-val {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.report-pie-legend-pct {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  min-width: 32px;
+  text-align: right;
+}
+
+@media (max-width: 520px) {
+  .report-pie-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .report-pie-legend-list {
+    max-height: 180px;
+  }
+}
+
 /* --- Chart Type Toggle (pastel / barras / líneas) --- */
 .chart-type-toggle {
   display: inline-flex;
@@ -2193,18 +2302,66 @@ table tr:hover td {
   margin-top: var(--space-xl);
 }
 
-/* --- Scrollbar Styling (Dark Mode) --- */
-[data-theme="dark"] ::-webkit-scrollbar {
-  width: 6px;
+/* --- Scrollbar Styling (Dark Mode & Modern Modals) --- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #333947 transparent;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-track {
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
   background: transparent;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: #333947;
   border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+.modal,
+.report-detail-modal,
+.report-detail-body,
+.table-container {
+  scrollbar-width: thin;
+  scrollbar-color: #333947 transparent;
+}
+
+.modal::-webkit-scrollbar,
+.report-detail-modal::-webkit-scrollbar,
+.report-detail-body::-webkit-scrollbar,
+.table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.modal::-webkit-scrollbar-track,
+.report-detail-modal::-webkit-scrollbar-track,
+.report-detail-body::-webkit-scrollbar-track,
+.table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal::-webkit-scrollbar-thumb,
+.report-detail-modal::-webkit-scrollbar-thumb,
+.report-detail-body::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb {
+  background: #333947;
+  border-radius: 9999px;
+}
+
+.modal::-webkit-scrollbar-thumb:hover,
+.report-detail-modal::-webkit-scrollbar-thumb:hover,
+.report-detail-body::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 /* --- Animations --- */
