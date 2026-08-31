@@ -1543,24 +1543,45 @@ table tr:hover td {
 
 /* --- Utstein Detail Modal --- */
 .report-detail-modal {
-  max-width: 900px;
-  width: 95vw;
-  max-height: 94vh;
-  padding: var(--space-lg) var(--space-xl);
+  max-width: 960px !important;
+  width: 92vw !important;
+  max-height: 90vh;
+  padding: 26px 36px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.report-detail-modal::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.report-detail-modal * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.report-detail-modal *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .report-detail-body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 12px 0;
+  gap: 14px;
+  margin: 14px 0;
 }
 
 .detail-section {
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 12px 18px;
+  padding: 14px 20px;
 }
 
 .detail-section-title {
@@ -1569,13 +1590,13 @@ table tr:hover td {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-tertiary);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px 18px;
+  gap: 12px 20px;
 }
 
 @media (max-width: 800px) {
@@ -1612,7 +1633,7 @@ table tr:hover td {
 .detail-tables-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 
 @media (max-width: 768px) {
@@ -1627,16 +1648,18 @@ table tr:hover td {
   align-items: flex-start;
   justify-content: space-between;
   position: relative;
-  padding: 6px 0 2px;
+  padding: 8px 0 2px;
+  width: 100%;
+  overflow: visible;
   gap: 8px;
 }
 
 .timeline-horizontal::before {
   content: '';
   position: absolute;
-  top: 17px;
-  left: 10px;
-  right: 10px;
+  top: 15px;
+  left: 20px;
+  right: 20px;
   height: 2px;
   background: var(--border-subtle);
   z-index: 1;
@@ -1649,7 +1672,9 @@ table tr:hover td {
   text-align: center;
   position: relative;
   z-index: 2;
-  min-width: 90px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
 }
 
 .timeline-dot {
@@ -2019,16 +2044,34 @@ table tr:hover td {
   font-size: 0.75rem;
 }
 
+/* --- Chart Middle Toolbar (entre gráfico y categorías) --- */
+.report-chart-middle-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 10px 0 6px;
+  padding: 0 2px;
+  min-height: 28px;
+}
+
 /* --- Vertical Structured Legend --- */
 .report-custom-legend {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: var(--space-md);
+  margin-top: 4px;
   padding: 0 2px;
   width: 100%;
   max-height: 180px;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.report-custom-legend::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .report-custom-legend__item {
