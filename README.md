@@ -18,7 +18,7 @@ El proyecto está estructurado como un **monorepo** que contiene tanto el backen
 
 ## Árbol de Directorios y Funcionalidad
 
-A continuación se detalla la estructura principal del proyecto y el propósito funcional de cada archivo o módulo relevante:
+A continuación detallamos la estructura principal del proyecto y el propósito funcional de cada archivo o módulo relevante:
 
 ```text
 olimpiadas2026/

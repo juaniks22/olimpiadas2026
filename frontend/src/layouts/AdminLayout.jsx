@@ -21,7 +21,7 @@ const navItems = [
   { to: '/admin/areas', label: 'Áreas', icon: <AreaIcon /> },
   { to: '/admin/users', label: 'Cuentas', icon: <UsersIcon /> },
   { to: '/admin/staff', label: 'Personal Certificado', icon: <UserCheckIcon /> },
-  { to: '/admin/response-team-positions', label: 'Equipos de Respuesta', icon: <ShieldIcon /> },
+  { to: '/admin/response-team-positions', label: 'Roles', icon: <ShieldIcon /> },
   { to: '/admin/reports', label: 'Reportes', icon: <ReportsIcon /> },
 ];
 
