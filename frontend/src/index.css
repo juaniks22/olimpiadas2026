@@ -2922,6 +2922,64 @@ table tr:hover td {
   color: var(--text-tertiary);
 }
 
+/* --- Flatpickr DateTime Picker (Individual / Registro de Eventos) --- */
+.flatpickr-datetime-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+}
+
+.flatpickr-datetime-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+}
+
+.flatpickr-datetime-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.flatpickr-datetime-input {
+  padding-left: 36px !important;
+  width: 100% !important;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.flatpickr-datetime-now-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  height: 38px;
+}
+
+.flatpickr-datetime-now-btn:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
 /* Flatpickr Dark Theme Overrides */
 [data-theme="dark"] .flatpickr-calendar {
   background: #222631;
@@ -2985,6 +3043,53 @@ table tr:hover td {
 [data-theme="dark"] .flatpickr-day.prevMonthDay,
 [data-theme="dark"] .flatpickr-day.nextMonthDay {
   color: #475569;
+}
+
+/* Flatpickr Time Picker (Reloj) Dark Mode */
+[data-theme="dark"] .flatpickr-time {
+  background: #1C1F26;
+  border-top: 1px solid #333947;
+  border-radius: 0 0 16px 16px;
+  padding: 6px 0;
+  max-height: 48px;
+}
+
+[data-theme="dark"] .flatpickr-time .numInputWrapper {
+  flex: 1;
+}
+
+[data-theme="dark"] .flatpickr-time input {
+  color: #F8FAFC !important;
+  font-weight: 700;
+  font-size: 1rem;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .flatpickr-time input:hover,
+[data-theme="dark"] .flatpickr-time input:focus {
+  background: rgba(59, 130, 246, 0.15) !important;
+}
+
+[data-theme="dark"] .flatpickr-time .flatpickr-time-separator {
+  color: #94A3B8;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+[data-theme="dark"] .flatpickr-time .flatpickr-am-pm {
+  color: #93C5FD;
+  font-weight: 700;
+  background: transparent;
+}
+
+[data-theme="dark"] .flatpickr-time .arrowUp,
+[data-theme="dark"] .flatpickr-time .arrowDown {
+  border-color: #94A3B8;
+}
+
+[data-theme="dark"] .flatpickr-time .arrowUp:hover,
+[data-theme="dark"] .flatpickr-time .arrowDown:hover {
+  background: rgba(59, 130, 246, 0.2);
 }
 
 /* --- Table Header & Pagination --- */

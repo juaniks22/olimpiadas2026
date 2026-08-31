@@ -26,9 +26,15 @@ export function DashboardIcon(props) {
 export function CrashCartIcon(props) {
   return (
     <svg {...base} {...props}>
-      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-      <path d="m3.3 7 8.7 5 8.7-5" />
-      <path d="M12 22V12" />
+      <rect x="5" y="2" width="14" height="17" rx="2" />
+      <line x1="5" y1="6.5" x2="19" y2="6.5" />
+      <line x1="5" y1="11" x2="19" y2="11" />
+      <line x1="5" y1="15.5" x2="19" y2="15.5" />
+      <line x1="10" y1="4.25" x2="14" y2="4.25" />
+      <line x1="10" y1="8.75" x2="14" y2="8.75" />
+      <line x1="10" y1="13.25" x2="14" y2="13.25" />
+      <path d="M7 19v2.5h2.5V19" />
+      <path d="M14.5 19v2.5H17V19" />
     </svg>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../App';
+import FlatpickrDateTimePicker from './FlatpickrDateTimePicker';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 async function readError(res, fallback) {
@@ -641,7 +642,14 @@ function Step2Patient({
 
         <div className="input-group">
           <label htmlFor="wiz-admission">Fecha de Ingreso *</label>
-          <input id="wiz-admission" className="input" type="datetime-local" step="1" max={nowLocal()} value={admissionDate} onChange={e => setAdmissionDate(e.target.value)} required />
+          <FlatpickrDateTimePicker
+            id="wiz-admission"
+            value={admissionDate}
+            maxDate={new Date()}
+            onChange={setAdmissionDate}
+            placeholder="Seleccionar fecha y hora..."
+            required
+          />
         </div>
 
         {origin === 'EXTRA_HOSPITAL' && (
@@ -684,7 +692,14 @@ function Step3Chronology({
         {timeFields.map(f => (
           <div className="input-group" key={f.id}>
             <label htmlFor={f.id}>{f.label}</label>
-            <input id={f.id} className="input" type="datetime-local" step="1" value={f.value} min={f.min || undefined} max={nowLocal()} onChange={e => f.set(e.target.value)} />
+            <FlatpickrDateTimePicker
+              id={f.id}
+              value={f.value}
+              minDate={f.min || undefined}
+              maxDate={new Date()}
+              onChange={f.set}
+              placeholder="Seleccionar fecha y hora..."
+            />
           </div>
         ))}
       </div>
@@ -773,9 +788,15 @@ function Step4Clinical({
               <label style={{ fontSize: '0.75rem' }}>N°</label>
               <div style={{ fontWeight: 600 }}>{d.sequenceNumber}</div>
             </div>
-            <div className="input-group" style={{ margin: 0 }}>
-              <label style={{ fontSize: '0.75rem' }}>Hora</label>
-              <input className="input" type="datetime-local" step="1" min={callReceivedAt || undefined} max={nowLocal()} value={d.performedAt} onChange={e => updateDefib(i, 'performedAt', e.target.value)} />
+            <div className="input-group" style={{ margin: 0, minWidth: 200, flex: '1 1 200px' }}>
+              <label style={{ fontSize: '0.75rem' }}>Fecha y Hora</label>
+              <FlatpickrDateTimePicker
+                value={d.performedAt}
+                minDate={callReceivedAt || undefined}
+                maxDate={new Date()}
+                onChange={val => updateDefib(i, 'performedAt', val)}
+                placeholder="Hora de descarga..."
+              />
             </div>
             <div className="input-group" style={{ margin: 0, minWidth: 80 }}>
               <label style={{ fontSize: '0.75rem' }}>Energía (J)</label>
@@ -826,9 +847,15 @@ function Step4Clinical({
                 {ROUTE_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
-            <div className="input-group" style={{ margin: 0 }}>
-              <label style={{ fontSize: '0.75rem' }}>Hora</label>
-              <input className="input" type="datetime-local" step="1" min={callReceivedAt || undefined} max={nowLocal()} value={d.administeredAt} onChange={e => updateDrug(i, 'administeredAt', e.target.value)} />
+            <div className="input-group" style={{ margin: 0, minWidth: 200, flex: '1 1 200px' }}>
+              <label style={{ fontSize: '0.75rem' }}>Fecha y Hora</label>
+              <FlatpickrDateTimePicker
+                value={d.administeredAt}
+                minDate={callReceivedAt || undefined}
+                maxDate={new Date()}
+                onChange={val => updateDrug(i, 'administeredAt', val)}
+                placeholder="Hora de administración..."
+              />
             </div>
             <button className="btn btn-sm btn-danger" type="button" onClick={() => removeDrug(i)} style={{ marginBottom: 2 }}>✕</button>
           </div>
