@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../App';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function ResponseTeamPositionsPage() {
   const { token, API_URL } = useContext(AuthContext);
@@ -27,6 +28,7 @@ export default function ResponseTeamPositionsPage() {
   };
 
   useEffect(() => { fetchPositions(); }, []);
+  useAutoRefresh(fetchPositions); // refresco silencioso periódico
 
   const handleSubmit = async (e) => {
     e.preventDefault();

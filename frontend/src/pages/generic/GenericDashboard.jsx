@@ -4,6 +4,7 @@ import { AuthContext } from '../../App';
 import CreateCallWizard from '../../components/CreateCallWizard';
 import ReportDetailModal from '../../components/ReportDetailModal';
 import { mapCallToReportFormat } from '../../utils/callMappers';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function GenericDashboard() {
   const { token, API_URL, user } = useContext(AuthContext);
@@ -60,6 +61,9 @@ export default function GenericDashboard() {
     };
     init();
   }, []);
+
+  // Refresco silencioso periódico (llamados propios + estado de carros).
+  useAutoRefresh(() => Promise.all([fetchCalls(), fetchCartsStatus()]));
 
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
