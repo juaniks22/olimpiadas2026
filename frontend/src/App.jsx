@@ -76,8 +76,11 @@ function App() {
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
 
+      // Renovar el token SOLO si sigue habiendo sesión. Si el usuario ya cerró sesión,
+      // una respuesta autenticada que quedó en vuelo NO debe re-loguearlo.
+      const current = localStorage.getItem('bc_token');
       const refreshed = response.headers.get('X-Session-Token');
-      if (refreshed && refreshed !== localStorage.getItem('bc_token')) {
+      if (current && refreshed && refreshed !== current) {
         localStorage.setItem('bc_token', refreshed);
         setToken(refreshed); // re-arma el timeout de inactividad con el nuevo exp
       }
