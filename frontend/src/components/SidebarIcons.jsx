@@ -139,4 +139,12 @@ export function ChevronUpIcon(props) {
       <polyline points="18 15 12 9 6 15" />
     </svg>
   );
+}export function MenuIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <line x1="4" x2="20" y1="12" y2="12" />
+      <line x1="4" x2="20" y1="6" y2="6" />
+      <line x1="4" x2="20" y1="18" y2="18" />
+    </svg>
+  );
 }
