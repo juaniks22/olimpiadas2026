@@ -143,40 +143,36 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
       </div>
 
       {chartType === 'pie' ? (
-        <>
-          <div className="chart-donut-wrap">
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Tooltip content={<CustomTooltip total={total} unitLabel={unitLabel} />} />
-                <Pie
-                  data={data}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={68}
-                  paddingAngle={4}
-                  stroke="none"
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+        <div className="chart-donut-wrap">
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Tooltip content={<CustomTooltip total={total} unitLabel={unitLabel} />} />
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={68}
+                paddingAngle={4}
+                stroke="none"
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
 
-            {/* Texto central superpuesto */}
-            <div className="chart-donut-center-text">
-              <span className="chart-donut-total__value">{total}</span>
-              <span className="chart-donut-total__label">{unitLabel}</span>
-            </div>
+          {/* Texto central superpuesto */}
+          <div className="chart-donut-center-text">
+            <span className="chart-donut-total__value">{total}</span>
+            <span className="chart-donut-total__label">{unitLabel}</span>
           </div>
-
-          <CustomLegend data={data} colors={colors} total={total} unitLabel={unitLabel} />
-        </>
+        </div>
       ) : chartType === 'bar' ? (
-        <div style={{ width: '100%', height: 250 }}>
+        <div style={{ width: '100%', height: 210 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" vertical={false} />
@@ -205,7 +201,7 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
           </ResponsiveContainer>
         </div>
       ) : (
-        <div style={{ width: '100%', height: 250 }}>
+        <div style={{ width: '100%', height: 210 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" vertical={false} />
@@ -235,9 +231,14 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
         </div>
       )}
 
-      <div className="report-chart-footer">
+      {/* Selector de gráfico: entre el gráfico y las categorías */}
+      <div className="report-chart-middle-toolbar">
         <ChartTypeToggle value={chartType} onChange={onChangeChartType} />
       </div>
+
+      {chartType === 'pie' && (
+        <CustomLegend data={data} colors={colors} total={total} unitLabel={unitLabel} />
+      )}
     </div>
   );
 }
@@ -820,10 +821,12 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            <CustomLegend data={pieData} colors={PIE_COLORS} total={donutTotal(pieData)} unitLabel="llamados" />
-            <div className="report-chart-footer" style={{ visibility: 'hidden' }} aria-hidden="true">
-              <div style={{ height: 28 }} />
+            {/* Espaciador invisible para alinear perfectamente con el selector de los otros 2 gráficos */}
+            <div className="report-chart-middle-toolbar" style={{ visibility: 'hidden' }} aria-hidden="true">
+              <div style={{ height: 26 }} />
             </div>
+
+            <CustomLegend data={pieData} colors={PIE_COLORS} total={donutTotal(pieData)} unitLabel="llamados" />
           </div>
         )}
 
