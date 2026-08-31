@@ -81,7 +81,6 @@ export default function AdminLayout() {
               <MenuIcon />
             </button>
             <h1>Hola, {user?.username || 'Administrador'}</h1>
-            <p>Métricas de Código Azul — {new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}</p>
           </div>
           <div className="top-bar-actions">
             <ProfileMenu

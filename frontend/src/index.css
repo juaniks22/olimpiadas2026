@@ -3075,6 +3075,12 @@ table tr:hover td {
   cursor: pointer;
   padding: 8px;
   border-radius: var(--radius-md);
+  margin-left: -8px; /* pull slightly to left to align with content */
+}
+.mobile-menu-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-primary); /* explicitly set color */
 }
 
 @media (max-width: 768px) {
@@ -3092,6 +3098,6 @@ table tr:hover td {
   .top-bar-title {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-md);
   }
 }
