@@ -1,6 +1,6 @@
 // Verifica el JWT del header Authorization: Bearer <token>.
 // Sesión deslizante: cada request válido devuelve un token nuevo en el header X-Session-Token,
-// renovando la ventana de 15 min. Es expiración POR INACTIVIDAD (CP-15), no un límite duro.
+// renovando la ventana de 10 min. Es expiración POR INACTIVIDAD (CP-15), no un límite duro.
 // El cliente (web/mobile) debe reemplazar su token guardado con el de ese header en cada respuesta.
 const AppError = require("../utils/AppError");
 const token = require("../utils/token");

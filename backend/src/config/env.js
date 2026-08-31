@@ -17,8 +17,9 @@ module.exports = {
   port: Number(process.env.PORT) || 3000,
   databaseUrl: required("DATABASE_URL"),
   jwtSecret: required("JWT_SECRET"),
-  // Sesión: expira a los 15 min de inactividad, sin refresh token (Documento de Visión CP-15).
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "15m",
+  // Sesión: expira a los 10 min de inactividad, sin refresh token (Documento de Visión CP-15).
+  // Es "por inactividad" porque cada request renueva el token (header X-Session-Token).
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "10m",
   adminUsername: process.env.ADMIN_USERNAME || "admin",
   adminPassword: process.env.ADMIN_PASSWORD || null,
 };

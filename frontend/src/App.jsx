@@ -43,12 +43,14 @@ function App() {
         setUser({ id: payload.sub || payload.id, username: payload.username, role: payload.role });
         
         if (payload.exp) {
+          // La ventana se reinicia con cada request (ver interceptor: X-Session-Token),
+          // así que este timeout salta solo tras 10 min SIN actividad de red.
           const timeUntilExp = (payload.exp * 1000) - Date.now();
           if (timeUntilExp <= 0) {
             logout();
           } else {
             timeoutId = setTimeout(() => {
-              alert('Sesión expirada por límite de tiempo. Por favor, vuelva a iniciar sesión.');
+              alert('Sesión cerrada por inactividad. Por favor, volvé a iniciar sesión.');
               logout();
             }, timeUntilExp);
           }
@@ -64,16 +66,26 @@ function App() {
     };
   }, [token]);
 
-  // Interceptor global para cerrar sesión cuando el token expira (backend retorna 401)
+  // Interceptor global:
+  //  - Sesión DESLIZANTE: el backend manda un token nuevo en el header X-Session-Token en cada
+  //    respuesta autenticada; lo guardamos y así se reinicia la ventana de 10 min. Si no hay
+  //    ninguna request durante 10 min, el token vence y la sesión se cierra (inactividad).
+  //  - Si llega un 401 (token vencido) en cualquier endpoint que no sea login, cerramos sesión.
   useEffect(() => {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
       const response = await originalFetch(...args);
-      // Si recibimos 401 en cualquier endpoint que no sea el de login, la sesión expiró.
+
+      const refreshed = response.headers.get('X-Session-Token');
+      if (refreshed && refreshed !== localStorage.getItem('bc_token')) {
+        localStorage.setItem('bc_token', refreshed);
+        setToken(refreshed); // re-arma el timeout de inactividad con el nuevo exp
+      }
+
       if (response.status === 401 && !response.url.includes('/api/auth/login')) {
         const currentToken = localStorage.getItem('bc_token');
         if (currentToken) {
-          alert('Sesión expirada por inactividad. Por favor, vuelva a iniciar sesión.');
+          alert('Sesión cerrada por inactividad. Por favor, volvé a iniciar sesión.');
           logout();
         }
       }

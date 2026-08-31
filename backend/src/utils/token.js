@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const env = require("../config/env");
 
 // Firma un nuevo token JWT inyectando el ID (sub), username y rol del usuario.
-// El token expira según lo definido en las variables de entorno (por defecto 15 mins).
+// El token expira según lo definido en las variables de entorno (por defecto 10 mins).
 function sign(user) {
   return jwt.sign(
     { sub: user.id, username: user.username, role: user.role },
