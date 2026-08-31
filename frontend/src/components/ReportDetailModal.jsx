@@ -213,6 +213,34 @@ export default function ReportDetailModal({ call, onClose }) {
               )}
             </div>
           )}
+          {/* Section: Personal Involucrado */}
+          {call.teamAssignments && call.teamAssignments.length > 0 && (
+            <div className="detail-section">
+              <h4 className="detail-section-title">Personal Involucrado ({call.teamAssignments.length})</h4>
+              <div className="table-container">
+                <table style={{ fontSize: '0.75rem' }}>
+                  <thead>
+                    <tr>
+                      <th>Miembro del Personal</th>
+                      <th>Rol / Posición</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {call.teamAssignments.map((assignment, idx) => (
+                      <tr key={assignment.id || idx}>
+                        <td style={{ fontWeight: 500 }}>
+                          {assignment.staffMember ? assignment.staffMember.name : '—'}
+                        </td>
+                        <td>
+                          {assignment.position ? assignment.position.name : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modal Actions */}
