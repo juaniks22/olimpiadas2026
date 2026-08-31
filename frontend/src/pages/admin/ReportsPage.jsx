@@ -551,63 +551,82 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* 2. Barra de Filtros Colapsable */}
-      <div className="card-flat report-filter-card" style={{ marginBottom: 'var(--space-xl)' }}>
+      {/* 2. Barra de Filtros con Búsqueda Directa */}
+      <div className="card-flat report-filter-card">
         <div className="filter-card-header">
-          <button
-            type="button"
-            className="filter-toggle-btn"
-            onClick={() => setFiltersOpen((v) => !v)}
-          >
-            <svg
-              className="filter-toggle-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-            </svg>
-            <span>Filtros</span>
-            {hasActiveFilters && (
-              <span className="badge badge-info" style={{ fontSize: '0.6875rem' }}>
-                Activos
-              </span>
-            )}
-            <svg
-              className={`filter-chevron ${filtersOpen ? 'filter-chevron--open' : ''}`}
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-
-          {hasActiveFilters && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
             <button
               type="button"
-              className="btn btn-sm btn-secondary"
-              onClick={handleResetFilters}
-              style={{ fontSize: '0.75rem', padding: '6px 12px' }}
+              className="filter-toggle-btn"
+              onClick={() => setFiltersOpen((v) => !v)}
             >
-              Limpiar
+              <svg
+                className="filter-toggle-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              <span>Filtros</span>
+              {hasActiveFilters && (
+                <span className="badge badge-info" style={{ fontSize: '0.6875rem' }}>
+                  Activos
+                </span>
+              )}
+              <svg
+                className={`filter-chevron ${filtersOpen ? 'filter-chevron--open' : ''}`}
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </button>
-          )}
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                className="btn btn-sm btn-secondary"
+                onClick={handleResetFilters}
+                style={{ fontSize: '0.75rem', padding: '6px 12px' }}
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          {/* Búsqueda rápida siempre visible (sin necesidad de abrir los filtros) */}
+          <div className="search-input" style={{ width: '320px', maxWidth: '100%' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              id="filter-search"
+              type="text"
+              className="input"
+              style={{ padding: '8px 14px 8px 38px', fontSize: '0.875rem' }}
+              placeholder="Buscar por DNI, área, usuario..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+            />
+          </div>
         </div>
 
         <div className={`filter-collapse ${filtersOpen ? 'filter-collapse--open' : ''}`}>
           <div className="filter-collapse__inner">
-            {/* Fila 1: Fecha + Búsqueda + Área */}
+            {/* Fila 1: Fecha + Área */}
             <div className="filter-grid report-filter-grid">
-              <div className="filter-item filter-item--date">
+              <div className="filter-item filter-item--date" style={{ gridColumn: 'span 2' }}>
                 <label>Rango de Fechas</label>
                 <FlatpickrRangePicker
                   dateFrom={filters.dateFrom}
@@ -616,24 +635,6 @@ export default function ReportsPage() {
                   placeholder="Todas las fechas..."
                   showPresets={true}
                 />
-              </div>
-
-              <div className="filter-item">
-                <label htmlFor="filter-search">Búsqueda</label>
-                <div className="search-input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                  <input
-                    id="filter-search"
-                    type="text"
-                    className="input"
-                    placeholder="DNI, área, usuario..."
-                    value={filters.search}
-                    onChange={(e) => handleFilterChange('search', e.target.value)}
-                  />
-                </div>
               </div>
 
               <div className="filter-item">

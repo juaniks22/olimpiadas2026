@@ -1718,7 +1718,7 @@ table tr:hover td {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-md);
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-lg);
   flex-wrap: wrap;
 }
 
@@ -1752,7 +1752,15 @@ table tr:hover td {
   height: 14px;
 }
 
-/* --- Collapsible Filter Toggle --- */
+/* --- Filter Card Header & Collapsible Toggle --- */
+.filter-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
 .filter-toggle-btn {
   display: inline-flex;
   align-items: center;
@@ -1819,6 +1827,7 @@ table tr:hover td {
 
 .report-filter-card {
   padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
 }
 
 /* --- Responsive Chart Card --- */
