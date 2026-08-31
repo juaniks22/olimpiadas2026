@@ -619,7 +619,24 @@ function Step2Patient({
 
         <div className="input-group">
           <label htmlFor="wiz-age">Edad *</label>
-          <input id="wiz-age" className="input" type="number" min={0} max={150} placeholder="Años" value={patientAge} onChange={e => setPatientAge(e.target.value)} required />
+          <input
+            id="wiz-age"
+            className="input"
+            type="number"
+            min={0}
+            max={150}
+            placeholder="Años"
+            value={patientAge}
+            onChange={e => {
+              const raw = e.target.value;
+              if (raw === '') { setPatientAge(''); return; }
+              const n = Number(raw);
+              if (Number.isNaN(n)) return; // ignora entradas no numéricas
+              // Tope duro: entero entre 0 y 150 (coincide con la validación del backend).
+              setPatientAge(String(Math.max(0, Math.min(150, Math.floor(n)))));
+            }}
+            required
+          />
         </div>
 
         <div className="input-group">
