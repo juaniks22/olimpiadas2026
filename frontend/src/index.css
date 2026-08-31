@@ -1,13 +1,3 @@
-/* ============================================================
-   Blue Code — Design System (Flat Design Evolucionado)
-   ============================================================
-   Reglas estrictas:
-   - NO glassmorphism, NO desenfoques pesados, NO sombras neón
-   - NO degradados complejos
-   - Separación vía márgenes amplios, bordes 1px, diferencias
-     sutiles de fondo
-   ============================================================ */
-
 /* --- CSS Reset --- */
 *,
 *::before,
@@ -1553,39 +1543,48 @@ table tr:hover td {
 
 /* --- Utstein Detail Modal --- */
 .report-detail-modal {
-  max-width: 680px;
+  max-width: 900px;
+  width: 95vw;
+  max-height: 94vh;
+  padding: var(--space-lg) var(--space-xl);
 }
 
 .report-detail-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  margin: var(--space-lg) 0;
+  gap: 12px;
+  margin: 12px 0;
 }
 
 .detail-section {
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
 }
 
 .detail-section-title {
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--text-tertiary);
-  margin-bottom: var(--space-md);
+  margin-bottom: 8px;
 }
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-md);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 18px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 800px) {
+  .detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
   .detail-grid {
     grid-template-columns: 1fr;
   }
@@ -1598,14 +1597,28 @@ table tr:hover td {
 }
 
 .detail-label {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   color: var(--text-tertiary);
+  font-weight: 500;
 }
 
 .detail-value {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-primary);
+  word-break: break-word;
+}
+
+.detail-tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .detail-tables-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Timeline Horizontal */
@@ -1614,8 +1627,7 @@ table tr:hover td {
   align-items: flex-start;
   justify-content: space-between;
   position: relative;
-  padding: 10px 0;
-  overflow-x: auto;
+  padding: 6px 0 2px;
   gap: 8px;
 }
 
@@ -1787,6 +1799,38 @@ table tr:hover td {
 /* --- Responsive Chart Card --- */
 .report-chart-card {
   padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.report-chart-header {
+  display: flex;
+  flex-direction: column;
+  min-height: 64px;
+  margin-bottom: var(--space-md);
+}
+
+.report-chart-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.report-chart-desc {
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.report-chart-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: var(--space-md);
+  min-height: 44px;
 }
 
 /* --- Fila de gráficos (Distribución / Origen / Área): los 3 en una sola
@@ -1803,6 +1847,260 @@ table tr:hover td {
 .reports-charts-row > .report-chart-card {
   flex: 1 1 280px;
   min-width: 0;
+}
+
+/* --- Modern Pie Chart with Automatic Legend Breakdown --- */
+.report-pie-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 200px) 1fr;
+  gap: var(--space-lg);
+  align-items: center;
+  width: 100%;
+  min-height: 220px;
+}
+
+.report-pie-chart-wrap {
+  width: 100%;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-pie-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.report-pie-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 6px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.report-pie-legend-item:hover {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.report-pie-legend-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.report-pie-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.report-pie-legend-name {
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-pie-legend-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.report-pie-legend-val {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.report-pie-legend-pct {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  min-width: 32px;
+  text-align: right;
+}
+
+/* --- Donut Chart Wrap & Center Total --- */
+.chart-donut-wrap {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-donut-center-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.chart-donut-total__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  font-family: var(--font-display);
+}
+
+.chart-donut-total__label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* --- Dark Theme Custom Tooltip --- */
+.report-tooltip-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  padding: 8px 12px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+  min-width: 140px;
+}
+
+.report-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.report-tooltip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.report-tooltip-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+}
+
+.report-tooltip-body {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+/* --- Vertical Structured Legend --- */
+.report-custom-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--space-md);
+  padding: 0 2px;
+  width: 100%;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.report-custom-legend__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.report-custom-legend__item:hover {
+  border-color: var(--color-primary);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.report-custom-legend__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.report-custom-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.report-custom-legend__name {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.report-custom-legend__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.report-custom-legend__val {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.report-custom-legend__pct {
+  color: var(--text-tertiary);
+  min-width: 32px;
+  text-align: right;
+  font-size: 0.6875rem;
+}
+
+@media (max-width: 520px) {
+  .report-pie-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .report-pie-legend-list {
+    max-height: 180px;
+  }
 }
 
 /* --- Chart Type Toggle (pastel / barras / líneas) --- */
@@ -1885,35 +2183,6 @@ table tr:hover td {
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-}
-
-/* --- Total central de los gráficos de torta / dona --- */
-.chart-donut-wrap {
-  position: relative;
-}
-
-.chart-donut-total {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  pointer-events: none;
-}
-
-.chart-donut-total__value {
-  display: block;
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.1;
-}
-
-.chart-donut-total__label {
-  display: block;
-  font-size: 0.6875rem;
-  color: var(--text-tertiary);
-  margin-top: 2px;
 }
 
 /* --- Mobile Responsive Breakpoints --- */

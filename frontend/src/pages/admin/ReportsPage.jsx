@@ -5,8 +5,6 @@ import FlatpickrRangePicker from '../../components/FlatpickrRangePicker';
 import ReportDetailModal from '../../components/ReportDetailModal';
 import { exportToPdf, exportToCsv } from '../../utils/reportExportUtils';
 import { axisTickFormatter } from '../../utils/chartFormat';
-import { makePieSliceLabel } from '../../components/PieSliceLabel';
-import ChartLegend from '../../components/ChartLegend';
 import {
   ResponsiveContainer,
   PieChart,
@@ -22,13 +20,8 @@ import {
   CartesianGrid,
 } from 'recharts';
 
-// Etiqueta interna de las porciones de torta: se reutiliza en todos los
-// gráficos circulares de esta página para mantener el mismo criterio de
-// legibilidad (texto adentro, sin línea guía, oculto en porciones finas).
-const PIE_SLICE_LABEL = makePieSliceLabel({ minPercent: 0.08, maxLength: 10 });
-
 // Total del gráfico de torta, mostrado en el centro del donut.
-const donutTotal = (data) => data.reduce((sum, d) => sum + d.value, 0);
+const donutTotal = (data) => data.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
 
 // Iconos para el selector de tipo de gráfico
 const CHART_TYPE_ICONS = {
@@ -50,6 +43,70 @@ const CHART_TYPE_ICONS = {
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
     </svg>
   ),
+};
+
+// 1. Tooltip Personalizado con fondo oscuro
+const CustomTooltip = ({ active, payload, label, total, unitLabel = 'llamados' }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    const name = data.payload?.name || label || (data.name !== 'value' ? data.name : '') || 'Item';
+    const value = data.value ?? data.payload?.value ?? 0;
+    const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+    const color = data.payload?.fill || data.fill || data.color || data.stroke || 'var(--color-primary)';
+
+    return (
+      <div className="report-tooltip-card">
+        <div className="report-tooltip-header">
+          <span
+            className="report-tooltip-dot"
+            style={{ backgroundColor: color }}
+          />
+          <span className="report-tooltip-name">
+            {name}
+          </span>
+        </div>
+        <div className="report-tooltip-body">
+          <span>Cantidad: <strong style={{ color: 'var(--text-primary)' }}>{value}</strong> {unitLabel}</span>
+          <span>({percentage}%)</span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+// 2. Leyenda Estilizada en lista vertical con alineación justificada
+const CustomLegend = ({ data, colors, total, unitLabel = '' }) => {
+  if (!data?.length) return null;
+
+  return (
+    <div className="report-custom-legend">
+      {data.map((item, index) => {
+        const color = item.color || (colors && colors[index % colors.length]) || 'var(--color-primary)';
+        const percentage = total > 0 ? ((item.value / total) * 100).toFixed(0) : 0;
+
+        return (
+          <div
+            key={item.name || index}
+            className="report-custom-legend__item"
+            title={`${item.name}: ${item.value}${unitLabel ? ` ${unitLabel}` : ''} (${percentage}%)`}
+          >
+            <div className="report-custom-legend__left">
+              <span
+                className="report-custom-legend__dot"
+                style={{ backgroundColor: color }}
+              />
+              <span className="report-custom-legend__name">{item.name}</span>
+            </div>
+            <div className="report-custom-legend__right">
+              <span className="report-custom-legend__val">{item.value}</span>
+              <span className="report-custom-legend__pct">({percentage}%)</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 };
 
 // Selector de tipo de gráfico (pastel / barras / líneas)
@@ -76,59 +133,51 @@ function ChartTypeToggle({ value, onChange }) {
 // Tarjeta de gráfico intercambiable (pastel / barras / líneas) para una distribución de conteos
 function SwitchableDistributionChart({ title, subtitle, data, colors, chartType, onChangeChartType, unitLabel = 'llamados' }) {
   if (!data.length) return null;
+  const total = donutTotal(data);
 
   return (
     <div className="card-flat report-chart-card">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 'var(--space-md)',
-          marginBottom: 'var(--space-md)',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>{title}</h3>
-          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>{subtitle}</p>
-        </div>
-        <ChartTypeToggle value={chartType} onChange={onChangeChartType} />
+      <div className="report-chart-header">
+        <h3 className="report-chart-title">{title}</h3>
+        <p className="report-chart-desc">{subtitle}</p>
       </div>
 
-      <div style={{ width: '100%', height: 240 }} className={chartType === 'pie' ? 'chart-donut-wrap' : undefined}>
-        <ResponsiveContainer width="100%" height="100%">
-          {chartType === 'pie' ? (
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={48}
-                outerRadius={82}
-                paddingAngle={4}
-                dataKey="value"
-                stroke="none"
-                label={PIE_SLICE_LABEL}
-                labelLine={false}
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--bg-card)',
-                  borderColor: 'var(--border-card)',
-                  borderRadius: '12px',
-                  color: 'var(--text-primary)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  fontSize: '0.8125rem',
-                }}
-                formatter={(value, name) => [`${value} ${unitLabel}`, name]}
-              />
-            </PieChart>
-          ) : chartType === 'bar' ? (
+      {chartType === 'pie' ? (
+        <>
+          <div className="chart-donut-wrap">
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Tooltip content={<CustomTooltip total={total} unitLabel={unitLabel} />} />
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={68}
+                  paddingAngle={4}
+                  stroke="none"
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+
+            {/* Texto central superpuesto */}
+            <div className="chart-donut-center-text">
+              <span className="chart-donut-total__value">{total}</span>
+              <span className="chart-donut-total__label">{unitLabel}</span>
+            </div>
+          </div>
+
+          <CustomLegend data={data} colors={colors} total={total} unitLabel={unitLabel} />
+        </>
+      ) : chartType === 'bar' ? (
+        <div style={{ width: '100%', height: 250 }}>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" vertical={false} />
               <XAxis
@@ -144,17 +193,8 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
               />
               <YAxis allowDecimals={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip
-                contentStyle={{
-                  background: 'var(--bg-card)',
-                  borderColor: 'var(--border-card)',
-                  borderRadius: '12px',
-                  color: 'var(--text-primary)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  fontSize: '0.8125rem',
-                }}
+                content={<CustomTooltip total={total} unitLabel={unitLabel} />}
                 cursor={{ fill: 'var(--bg-input)' }}
-                labelFormatter={(label) => label}
-                formatter={(value) => [`${value} ${unitLabel}`, '']}
               />
               <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                 {data.map((entry, index) => (
@@ -162,7 +202,11 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                 ))}
               </Bar>
             </BarChart>
-          ) : (
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div style={{ width: '100%', height: 250 }}>
+          <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 16, left: -16, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-card)" vertical={false} />
               <XAxis
@@ -177,18 +221,7 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                 tickFormatter={axisTickFormatter(9)}
               />
               <YAxis allowDecimals={false} tick={{ fill: 'var(--text-tertiary)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--bg-card)',
-                  borderColor: 'var(--border-card)',
-                  borderRadius: '12px',
-                  color: 'var(--text-primary)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  fontSize: '0.8125rem',
-                }}
-                labelFormatter={(label) => label}
-                formatter={(value) => [`${value} ${unitLabel}`, '']}
-              />
+              <Tooltip content={<CustomTooltip total={total} unitLabel={unitLabel} />} />
               <Line
                 type="monotone"
                 dataKey="value"
@@ -198,16 +231,13 @@ function SwitchableDistributionChart({ title, subtitle, data, colors, chartType,
                 activeDot={{ r: 6 }}
               />
             </LineChart>
-          )}
-        </ResponsiveContainer>
-        {chartType === 'pie' && (
-          <div className="chart-donut-total">
-            <span className="chart-donut-total__value">{donutTotal(data)}</span>
-            <span className="chart-donut-total__label">{unitLabel}</span>
-          </div>
-        )}
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      <div className="report-chart-footer">
+        <ChartTypeToggle value={chartType} onChange={onChangeChartType} />
       </div>
-      {chartType === 'pie' && <ChartLegend data={data} colors={colors} unitLabel={unitLabel} />}
     </div>
   );
 }
@@ -751,27 +781,27 @@ export default function ReportsPage() {
       <div className="reports-charts-row">
         {pieData.length > 0 && (
           <div className="card-flat report-chart-card">
-            <div style={{ marginBottom: 'var(--space-md)' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Distribución de Llamados</h3>
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>
+            <div className="report-chart-header">
+              <h3 className="report-chart-title">Distribución de Llamados</h3>
+              <p className="report-chart-desc">
                 Proporción de eventos de emergencia, normales y RCE en el período seleccionado.
               </p>
             </div>
 
-            <div style={{ width: '100%', height: 240 }} className="chart-donut-wrap">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="chart-donut-wrap">
+              <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
+                  <Tooltip content={<CustomTooltip total={donutTotal(pieData)} unitLabel="llamados" />} />
                   <Pie
                     data={pieData}
+                    dataKey="value"
+                    nameKey="name"
                     cx="50%"
                     cy="50%"
-                    innerRadius={48}
-                    outerRadius={82}
+                    innerRadius={50}
+                    outerRadius={68}
                     paddingAngle={4}
-                    dataKey="value"
                     stroke="none"
-                    label={PIE_SLICE_LABEL}
-                    labelLine={false}
                   >
                     {pieData.map((entry, index) => (
                       <Cell
@@ -780,25 +810,20 @@ export default function ReportsPage() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      background: 'var(--bg-card)',
-                      borderColor: 'var(--border-card)',
-                      borderRadius: '12px',
-                      color: 'var(--text-primary)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                      fontSize: '0.8125rem',
-                    }}
-                    formatter={(value, name) => [`${value} llamados`, name]}
-                  />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="chart-donut-total">
+
+              {/* Texto central superpuesto */}
+              <div className="chart-donut-center-text">
                 <span className="chart-donut-total__value">{donutTotal(pieData)}</span>
                 <span className="chart-donut-total__label">llamados</span>
               </div>
             </div>
-            <ChartLegend data={pieData} colors={PIE_COLORS} unitLabel="llamados" />
+
+            <CustomLegend data={pieData} colors={PIE_COLORS} total={donutTotal(pieData)} unitLabel="llamados" />
+            <div className="report-chart-footer" style={{ visibility: 'hidden' }} aria-hidden="true">
+              <div style={{ height: 28 }} />
+            </div>
           </div>
         )}
 
@@ -809,6 +834,7 @@ export default function ReportsPage() {
           colors={ORIGIN_COLORS}
           chartType={originChartType}
           onChangeChartType={setOriginChartType}
+          unitLabel="llamados"
         />
 
         <SwitchableDistributionChart
@@ -818,6 +844,7 @@ export default function ReportsPage() {
           colors={AREA_COLORS}
           chartType={areaChartType}
           onChangeChartType={setAreaChartType}
+          unitLabel="llamados"
         />
       </div>
 
@@ -862,19 +889,18 @@ export default function ReportsPage() {
                 <th className="text-center">T. Respuesta</th>
                 <th className="text-center">RCE</th>
                 <th>Cargado Por</th>
-                <th className="text-center">Acción</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-tertiary)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-tertiary)' }}>
                     Cargando reportes clínicos...
                   </td>
                 </tr>
               ) : calls.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-tertiary)' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: 'var(--space-2xl) 0', color: 'var(--text-tertiary)' }}>
                     {hasActiveFilters
                       ? 'No se encontraron llamados que coincidan con los filtros aplicados.'
                       : 'No hay reportes registrados en el sistema.'}
@@ -889,7 +915,12 @@ export default function ReportsPage() {
                     : '—';
 
                   return (
-                    <tr key={call.id}>
+                    <tr
+                      key={call.id}
+                      className="table-row-clickable"
+                      onClick={() => setSelectedCallForDetail(call)}
+                      title="Haz clic para ver la ficha clínica completa"
+                    >
                       <td className="text-center" style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
                         #{itemNumber}
                       </td>
@@ -930,16 +961,6 @@ export default function ReportsPage() {
                         </span>
                       </td>
                       <td style={{ color: 'var(--text-secondary)' }}>{call.cargadoPor || '—'}</td>
-                      <td className="text-center">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => setSelectedCallForDetail(call)}
-                          style={{ color: 'var(--color-primary)' }}
-                        >
-                          Ver Ficha
-                        </button>
-                      </td>
                     </tr>
                   );
                 })
