@@ -1,5 +1,6 @@
-import { useState, useEffect, useContext, useMemo } from 'react';
+import { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { AuthContext } from '../../App';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import FlatpickrRangePicker from '../../components/FlatpickrRangePicker';
 import ReportDetailModal from '../../components/ReportDetailModal';
 import { exportToPdf, exportToCsv } from '../../utils/reportExportUtils';
@@ -267,45 +268,44 @@ export default function ReportsPage() {
     fetchAreas();
   }, [API_URL, token]);
 
-  // 2. Cargar reportes y métricas según filtros activos
-  useEffect(() => {
-    const fetchReportsData = async () => {
-      setLoading(true);
-      try {
-        const params = new URLSearchParams();
-        if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
-        if (filters.dateTo) params.set('dateTo', filters.dateTo);
-        if (filters.areaId) params.set('areaId', filters.areaId);
-        if (filters.origin) params.set('origin', filters.origin);
-        if (filters.type) params.set('type', filters.type);
-        if (filters.search) params.set('search', filters.search);
-        if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
+  // 2. Cargar reportes y métricas según filtros activos.
+  // `silent` = refresco automático: no muestra "cargando" ni resetea la paginación.
+  const fetchReportsData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.set('dateTo', filters.dateTo);
+      if (filters.areaId) params.set('areaId', filters.areaId);
+      if (filters.origin) params.set('origin', filters.origin);
+      if (filters.type) params.set('type', filters.type);
+      if (filters.search) params.set('search', filters.search);
+      if (filters.sortOrder) params.set('sortOrder', filters.sortOrder);
 
-        const [summaryRes, callsRes] = await Promise.all([
-          fetch(`${API_URL}/api/reports/summary?${params}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${API_URL}/api/reports/calls?${params}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+      const [summaryRes, callsRes] = await Promise.all([
+        fetch(`${API_URL}/api/reports/summary?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_URL}/api/reports/calls?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
 
-        if (summaryRes.ok && callsRes.ok) {
-          const summaryData = await summaryRes.json();
-          const callsData = await callsRes.json();
-          setSummary(summaryData);
-          setCalls(Array.isArray(callsData) ? callsData : []);
-          setCurrentPage(1); // Reiniciar paginación al cambiar filtros
-        }
-      } catch (err) {
-        console.error('Error al cargar reportes:', err);
-      } finally {
-        setLoading(false);
+      if (summaryRes.ok && callsRes.ok) {
+        const summaryData = await summaryRes.json();
+        const callsData = await callsRes.json();
+        setSummary(summaryData);
+        setCalls(Array.isArray(callsData) ? callsData : []);
+        if (!silent) setCurrentPage(1); // Reiniciar paginación solo al cambiar filtros
       }
-    };
+    } catch (err) {
+      console.error('Error al cargar reportes:', err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [API_URL, token, filters]);
 
+  useEffect(() => {
     fetchReportsData();
-  }, [API_URL, token, filters, seeding]);
+  }, [fetchReportsData, seeding]);
+
+  useAutoRefresh(() => fetchReportsData({ silent: true }), 20000);
 
   // Manejo de cambios en filtros
   const handleFilterChange = (field, value) => {

@@ -1,7 +1,8 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../App';
 import ReportDetailModal from '../../components/ReportDetailModal';
 import { mapCallToReportFormat } from '../../utils/callMappers';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 export default function GenericHistory() {
   const { token, API_URL } = useContext(AuthContext);
@@ -9,24 +10,24 @@ export default function GenericHistory() {
   const [loading, setLoading] = useState(true);
   const [selectedCall, setSelectedCall] = useState(null);
 
-  useEffect(() => {
-    const fetchCalls = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/calls`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setCalls(Array.isArray(data) ? data : data.data || []);
-        }
-      } catch (err) {
-        console.error('Error fetching calls:', err);
-      } finally {
-        setLoading(false);
+  const fetchCalls = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/calls`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCalls(Array.isArray(data) ? data : data.data || []);
       }
-    };
-    fetchCalls();
-  }, []);
+    } catch (err) {
+      console.error('Error fetching calls:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL, token]);
+
+  useEffect(() => { fetchCalls(); }, [fetchCalls]);
+  useAutoRefresh(fetchCalls); // refresco silencioso periódico
 
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);

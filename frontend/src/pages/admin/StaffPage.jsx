@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../App';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 // El backend responde los errores como { error: { message, details } }.
 async function readError(res, fallback) {
@@ -57,6 +58,7 @@ export default function StaffPage() {
   }, [API_URL, token]);
 
   useEffect(() => { fetchStaff(); }, [fetchStaff]);
+  useAutoRefresh(fetchStaff); // refresco silencioso periódico
 
   return (
     <>

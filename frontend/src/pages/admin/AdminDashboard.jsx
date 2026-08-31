@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../../App';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import RestockTicketModal from '../../components/RestockTicketModal';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -109,8 +110,8 @@ export default function AdminDashboard() {
 
   const authHeaders = { Authorization: `Bearer ${token}` };
 
-  const fetchDashboardData = useCallback(async () => {
-    setLoading(true);
+  const fetchDashboardData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const { from, to, prevFrom, prevTo } = getPeriodRanges(range);
 
@@ -179,33 +180,36 @@ export default function AdminDashboard() {
     }
   }, [API_URL, token, range]);
 
+  const fetchRecentReports = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoadingReports(true);
+    try {
+      const res = await fetch(`${API_URL}/api/reports/calls?sortOrder=desc&limit=5`, { headers: authHeaders });
+      if (res.ok) {
+        const data = await res.json();
+        setRecentReports(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Error fetching recent reports:', err);
+    } finally {
+      setLoadingReports(false);
+    }
+  }, [API_URL, token]);
+
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  // Reactivar carro desde "Atención Requerida": abre el ticket de reposición.
-
-  // Últimos 5 reportes cargados en el sistema (independiente del selector de período:
-  // siempre son los 5 más recientes, no los 5 más recientes DENTRO del rango elegido).
   useEffect(() => {
-    const fetchRecentReports = async () => {
-      setLoadingReports(true);
-      try {
-        const res = await fetch(`${API_URL}/api/reports/calls?sortOrder=desc&limit=5`, {
-          headers: authHeaders,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setRecentReports(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        console.error('Error fetching recent reports:', err);
-      } finally {
-        setLoadingReports(false);
-      }
-    };
     fetchRecentReports();
-  }, [API_URL, token]);
+  }, [fetchRecentReports]);
+
+  // Auto-refresh silencioso de todo el tablero.
+  useAutoRefresh(() => Promise.all([
+    fetchDashboardData({ silent: true }),
+    fetchRecentReports({ silent: true }),
+  ]));
+
+  // Reactivar carro desde "Atención Requerida": abre el ticket de reposición.
 
   const callsDeltaText = formatDelta(deltas.calls);
   const avgDeltaText = formatDelta(deltas.avgResponseTime, { suffix: 'm', decimals: 1 });

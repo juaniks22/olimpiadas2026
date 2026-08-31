@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../App';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import RestockTicketModal from '../../components/RestockTicketModal';
 
 // El backend responde los errores como { error: { message, details } }.
@@ -52,6 +53,7 @@ export default function CrashCartsPage() {
   }, [API_URL, token]);
 
   useEffect(() => { fetchCarts(); }, [fetchCarts]);
+  useAutoRefresh(fetchCarts); // refresco silencioso periódico
 
   return (
     <>

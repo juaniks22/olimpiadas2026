@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../App';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 
 // El backend responde los errores como { error: { message, details } }.
 async function readError(res, fallback) {
@@ -55,6 +56,7 @@ export default function AreasPage() {
   }, [API_URL, token]);
 
   useEffect(() => { fetchAreas(); }, [fetchAreas]);
+  useAutoRefresh(fetchAreas); // refresco silencioso periódico
 
   const handleCreate = async (e) => {
     e.preventDefault();
