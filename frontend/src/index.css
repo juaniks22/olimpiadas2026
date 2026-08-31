@@ -350,6 +350,93 @@ h4 { font-size: 1.125rem; }
   text-align: center;
 }
 
+/* --- Quantity Stepper: reemplaza las flechitas nativas de type="number"
+   por botones −/+ propios, consistentes en todos los navegadores y con
+   soporte de tema claro/oscuro --- */
+.qty-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  width: fit-content;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.qty-stepper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--border-input-focus);
+}
+
+.qty-stepper__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.qty-stepper__btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.qty-stepper__btn:hover:not(:disabled) {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.qty-stepper__btn:active:not(:disabled) {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.qty-stepper__btn:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+.qty-stepper__input {
+  width: 42px;
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--border-input);
+  border-right: 1px solid var(--border-input);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0;
+}
+
+.qty-stepper__input:focus {
+  outline: none;
+}
+
+.qty-stepper__input:disabled {
+  color: var(--text-tertiary);
+}
+
+.qty-stepper--changed {
+  border-color: #F59E0B;
+}
+
+.qty-stepper--changed .qty-stepper__input {
+  border-left-color: #F59E0B;
+  border-right-color: #F59E0B;
+}
+
+.qty-stepper--disabled {
+  opacity: 0.6;
+}
+
 /* Los <select> usan una flecha nativa del navegador que no se puede
    alinear con precisión. La reemplazamos por un chevron propio,
    bien centrado, y ocultamos la nativa. */
@@ -455,15 +542,6 @@ table tr:last-child td {
 
 table tr:hover td {
   background: var(--color-primary-light);
-}
-
-.table-row-clickable {
-  cursor: pointer;
-  user-select: none;
-}
-
-.table-row-clickable:hover td {
-  background: rgba(59, 130, 246, 0.1) !important;
 }
 
 /* --- Sidebar Layout --- */
@@ -579,6 +657,174 @@ table tr:hover td {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
+}
+
+/* --- Profile Menu (sidebar): avatar + nombre, con tema y logout adentro --- */
+.profile-menu {
+  position: relative;
+}
+
+.profile-menu__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: auto;
+  padding: 6px 10px 6px 6px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.profile-menu__trigger:hover,
+.profile-menu--open .profile-menu__trigger {
+  background: var(--color-primary-light);
+}
+
+.profile-menu__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.profile-menu__info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.profile-menu__name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-menu__role {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+}
+
+.profile-menu__chevron {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  transform: rotate(180deg);
+  transition: transform var(--transition-fast);
+}
+
+.profile-menu--open .profile-menu__chevron {
+  transform: rotate(0deg);
+}
+
+.profile-menu__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
+  min-width: 200px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 20;
+}
+
+.profile-menu__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+
+.profile-menu__logout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.profile-menu__logout:hover {
+  background: rgba(244, 63, 94, 0.12);
+}
+
+/* --- Profile Badge (sidebar): solo ícono + nombre, sin menú --- */
+.profile-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: auto;
+  border-radius: var(--radius-lg);
+}
+
+.profile-badge__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.profile-badge__info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.profile-badge__name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-badge__role {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
 }
 
 /* --- Main Content --- */
@@ -1559,106 +1805,6 @@ table tr:hover td {
   min-width: 0;
 }
 
-/* --- Modern Pie Chart with Automatic Legend Breakdown --- */
-.report-pie-layout {
-  display: grid;
-  grid-template-columns: minmax(180px, 200px) 1fr;
-  gap: var(--space-lg);
-  align-items: center;
-  width: 100%;
-  min-height: 220px;
-}
-
-.report-pie-chart-wrap {
-  width: 100%;
-  height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.report-pie-legend-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 210px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.report-pie-legend-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  padding: 6px 10px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  font-size: 0.8125rem;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-}
-
-.report-pie-legend-item:hover {
-  border-color: var(--color-primary);
-  background: rgba(59, 130, 246, 0.06);
-}
-
-.report-pie-legend-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-
-.report-pie-legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
-
-.report-pie-legend-name {
-  color: var(--text-secondary);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.report-pie-legend-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.report-pie-legend-val {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.8125rem;
-}
-
-.report-pie-legend-pct {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  min-width: 32px;
-  text-align: right;
-}
-
-@media (max-width: 520px) {
-  .report-pie-layout {
-    grid-template-columns: 1fr;
-    gap: var(--space-md);
-  }
-
-  .report-pie-legend-list {
-    max-height: 180px;
-  }
-}
-
 /* --- Chart Type Toggle (pastel / barras / líneas) --- */
 .chart-type-toggle {
   display: inline-flex;
@@ -2302,66 +2448,18 @@ table tr:hover td {
   margin-top: var(--space-xl);
 }
 
-/* --- Scrollbar Styling (Dark Mode & Modern Modals) --- */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #333947 transparent;
-}
-
-::-webkit-scrollbar {
+/* --- Scrollbar Styling (Dark Mode) --- */
+[data-theme="dark"] ::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
 }
 
-::-webkit-scrollbar-track {
+[data-theme="dark"] ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-::-webkit-scrollbar-thumb {
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
   background: #333947;
   border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-}
-
-.modal,
-.report-detail-modal,
-.report-detail-body,
-.table-container {
-  scrollbar-width: thin;
-  scrollbar-color: #333947 transparent;
-}
-
-.modal::-webkit-scrollbar,
-.report-detail-modal::-webkit-scrollbar,
-.report-detail-body::-webkit-scrollbar,
-.table-container::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.modal::-webkit-scrollbar-track,
-.report-detail-modal::-webkit-scrollbar-track,
-.report-detail-body::-webkit-scrollbar-track,
-.table-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.modal::-webkit-scrollbar-thumb,
-.report-detail-modal::-webkit-scrollbar-thumb,
-.report-detail-body::-webkit-scrollbar-thumb,
-.table-container::-webkit-scrollbar-thumb {
-  background: #333947;
-  border-radius: 9999px;
-}
-
-.modal::-webkit-scrollbar-thumb:hover,
-.report-detail-modal::-webkit-scrollbar-thumb:hover,
-.report-detail-body::-webkit-scrollbar-thumb:hover,
-.table-container::-webkit-scrollbar-thumb:hover {
-  background: #475569;
 }
 
 /* --- Animations --- */

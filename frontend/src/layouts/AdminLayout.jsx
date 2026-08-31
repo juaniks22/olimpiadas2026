@@ -2,7 +2,8 @@ import { useContext } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
-import ThemeToggleButton from '../components/ThemeToggleButton';
+import ProfileMenu from '../components/ProfileMenu';
+import ProfileBadge from '../components/ProfileBadge';
 import { useThemeToggle } from '../hooks/useThemeToggle';
 import {
   DashboardIcon,
@@ -63,14 +64,7 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        <button className="sidebar-link sidebar-logout" onClick={handleLogout}>
-          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          <span>Cerrar sesión</span>
-        </button>
+        <ProfileBadge username={user?.username} roleLabel="Administrador" />
       </aside>
 
       {/* Main Content */}
@@ -81,10 +75,13 @@ export default function AdminLayout() {
             <p>Métricas de Código Azul — {new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}</p>
           </div>
           <div className="top-bar-actions">
-            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
-            <div className="avatar">
-              {(user?.username || 'A').charAt(0).toUpperCase()}
-            </div>
+            <ProfileMenu
+              username={user?.username}
+              roleLabel="Administrador"
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onLogout={handleLogout}
+            />
           </div>
         </div>
 

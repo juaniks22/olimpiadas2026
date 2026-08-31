@@ -2,7 +2,8 @@ import { useContext } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
-import ThemeToggleButton from '../components/ThemeToggleButton';
+import ProfileMenu from '../components/ProfileMenu';
+import ProfileBadge from '../components/ProfileBadge';
 import { useThemeToggle } from '../hooks/useThemeToggle';
 import { HomeIcon, HistoryIcon } from '../components/SidebarIcons';
 
@@ -50,14 +51,7 @@ export default function GenericLayout() {
           ))}
         </nav>
 
-        <button className="sidebar-link sidebar-logout" onClick={handleLogout}>
-          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          <span>Cerrar sesión</span>
-        </button>
+        <ProfileBadge username={user?.username} roleLabel="Jefe de Piso" />
       </aside>
 
       {/* Main Content */}
@@ -67,14 +61,13 @@ export default function GenericLayout() {
             <h1>Turno Actual: Guardia</h1>
           </div>
           <div className="top-bar-actions">
-            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{user?.username || 'Usuario'}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Jefe de Piso</div>
-            </div>
-            <div className="avatar">
-              {(user?.username || 'U').charAt(0).toUpperCase()}
-            </div>
+            <ProfileMenu
+              username={user?.username}
+              roleLabel="Jefe de Piso"
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onLogout={handleLogout}
+            />
           </div>
         </div>
 
