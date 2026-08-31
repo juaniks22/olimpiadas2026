@@ -1,8 +1,9 @@
-import { useState, useContext } from 'react';
+import { useContext } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
 import ProfileMenu from '../components/ProfileMenu';
+import ProfileBadge from '../components/ProfileBadge';
 import { useThemeToggle } from '../hooks/useThemeToggle';
 import {
   DashboardIcon,
@@ -12,7 +13,6 @@ import {
   UserCheckIcon,
   ShieldIcon,
   ReportsIcon,
-  MenuIcon,
 } from '../components/SidebarIcons';
 
 const navItems = [
@@ -21,17 +21,18 @@ const navItems = [
   { to: '/admin/areas', label: 'Áreas', icon: <AreaIcon /> },
   { to: '/admin/users', label: 'Cuentas', icon: <UsersIcon /> },
   { to: '/admin/staff', label: 'Personal Certificado', icon: <UserCheckIcon /> },
-  { to: '/admin/response-team-positions', label: 'Roles', icon: <ShieldIcon /> },
+  { to: '/admin/response-team-positions', label: 'Equipos de Respuesta', icon: <ShieldIcon /> },
   { to: '/admin/reports', label: 'Reportes', icon: <ReportsIcon /> },
 ];
 
 export default function AdminLayout() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Tema del Administrador: oscuro por defecto, con opción de cambiar a claro.
-  const { theme, toggleTheme } = useThemeToggle('bc-theme-admin', 'dark');
+  // La clave incluye el id de cuenta para que la preferencia sea propia de
+  // esa sesión/usuario y no un estado compartido por rol.
+  const { theme, toggleTheme } = useThemeToggle(`bc-theme-admin-${user?.id ?? 'anon'}`, 'dark');
 
   const handleLogout = () => {
     logout();
@@ -40,15 +41,9 @@ export default function AdminLayout() {
 
   return (
     <div className="app-layout">
-      {/* Overlay mobile */}
-      <div 
-        className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`} 
-        onClick={() => setIsSidebarOpen(false)}
-      ></div>
-
       {/* Sidebar */}
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <Link to="/admin" className="sidebar-brand" aria-label="Ir al dashboard" onClick={() => setIsSidebarOpen(false)}>
+      <aside className="sidebar">
+        <Link to="/admin" className="sidebar-brand" aria-label="Ir al dashboard">
           <div className="sidebar-brand-icon">
             <HeartPulseIcon size={20} color="white" />
           </div>
@@ -64,23 +59,22 @@ export default function AdminLayout() {
               className={({ isActive }) =>
                 `sidebar-link ${isActive ? 'active' : ''}`
               }
-              onClick={() => setIsSidebarOpen(false)}
             >
               <span className="icon">{item.icon}</span>
               {item.label}
             </NavLink>
           ))}
         </nav>
+
+        <ProfileBadge username={user?.username} roleLabel="Administrador" />
       </aside>
 
       {/* Main Content */}
       <main className="main-content">
         <div className="top-bar">
           <div className="top-bar-title">
-            <button className="mobile-menu-btn" onClick={() => setIsSidebarOpen(true)}>
-              <MenuIcon />
-            </button>
             <h1>Hola, {user?.username || 'Administrador'}</h1>
+            <p>Métricas de Código Azul — {new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}</p>
           </div>
           <div className="top-bar-actions">
             <ProfileMenu
