@@ -1,7 +1,9 @@
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
+import ThemeToggleButton from '../components/ThemeToggleButton';
+import { useThemeToggle } from '../hooks/useThemeToggle';
 import {
   DashboardIcon,
   CrashCartIcon,
@@ -26,11 +28,8 @@ export default function AdminLayout() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Apply dark theme
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    return () => document.documentElement.removeAttribute('data-theme');
-  }, []);
+  // Tema del Administrador: oscuro por defecto, con opción de cambiar a claro.
+  const { theme, toggleTheme } = useThemeToggle('bc-theme-admin', 'dark');
 
   const handleLogout = () => {
     logout();
@@ -82,6 +81,7 @@ export default function AdminLayout() {
             <p>Métricas de Código Azul — {new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}</p>
           </div>
           <div className="top-bar-actions">
+            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
             <div className="avatar">
               {(user?.username || 'A').charAt(0).toUpperCase()}
             </div>

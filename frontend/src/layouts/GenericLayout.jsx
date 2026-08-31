@@ -1,7 +1,9 @@
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
+import ThemeToggleButton from '../components/ThemeToggleButton';
+import { useThemeToggle } from '../hooks/useThemeToggle';
 import { HomeIcon, HistoryIcon } from '../components/SidebarIcons';
 
 const navItems = [
@@ -13,10 +15,8 @@ export default function GenericLayout() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Ensure light theme
-  useEffect(() => {
-    document.documentElement.removeAttribute('data-theme');
-  }, []);
+  // Tema del Genérico (Jefe de Piso): claro por defecto, con opción de cambiar a oscuro.
+  const { theme, toggleTheme } = useThemeToggle('bc-theme-generic', 'light');
 
   const handleLogout = () => {
     logout();
@@ -67,6 +67,7 @@ export default function GenericLayout() {
             <h1>Turno Actual: Guardia</h1>
           </div>
           <div className="top-bar-actions">
+            <ThemeToggleButton theme={theme} onToggle={toggleTheme} />
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{user?.username || 'Usuario'}</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Jefe de Piso</div>
