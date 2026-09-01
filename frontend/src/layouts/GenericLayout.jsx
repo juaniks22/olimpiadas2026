@@ -1,10 +1,10 @@
-import { useContext } from 'react';
+import { useState, useContext } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
 import ProfileMenu from '../components/ProfileMenu';
 import { useThemeToggle } from '../hooks/useThemeToggle';
-import { HomeIcon, HistoryIcon } from '../components/SidebarIcons';
+import { HomeIcon, HistoryIcon, MenuIcon } from '../components/SidebarIcons';
 
 const navItems = [
   { to: '/app', label: 'Panel Principal', icon: <HomeIcon />, end: true },
@@ -14,6 +14,7 @@ const navItems = [
 export default function GenericLayout() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Tema del Genérico (Jefe de Piso): claro por defecto, con opción de cambiar a oscuro.
   // La clave incluye el id de cuenta: cada Jefe de Piso tiene su propia
@@ -27,9 +28,15 @@ export default function GenericLayout() {
 
   return (
     <div className="app-layout">
+      {/* Overlay mobile */}
+      <div 
+        className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`} 
+        onClick={() => setIsSidebarOpen(false)}
+      ></div>
+
       {/* Sidebar */}
-      <aside className="sidebar">
-        <Link to="/app" className="sidebar-brand" aria-label="Ir al panel principal">
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <Link to="/app" className="sidebar-brand" aria-label="Ir al panel principal" onClick={() => setIsSidebarOpen(false)}>
           <div className="sidebar-brand-icon">
             <HeartPulseIcon size={20} color="white" />
           </div>
@@ -45,6 +52,7 @@ export default function GenericLayout() {
               className={({ isActive }) =>
                 `sidebar-link ${isActive ? 'active' : ''}`
               }
+              onClick={() => setIsSidebarOpen(false)}
             >
               <span className="icon">{item.icon}</span>
               {item.label}
@@ -57,6 +65,9 @@ export default function GenericLayout() {
       <main className="main-content">
         <div className="top-bar">
           <div className="top-bar-title">
+            <button className="mobile-menu-btn" onClick={() => setIsSidebarOpen(true)}>
+              <MenuIcon />
+            </button>
             <h1>Turno Actual: Guardia</h1>
           </div>
           <div className="top-bar-actions">

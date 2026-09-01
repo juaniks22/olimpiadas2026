@@ -3234,3 +3234,58 @@ table tr:hover td {
     gap: var(--space-md);
   }
 }
+
+/* --- Mobile Sidebar Overrides --- */
+.sidebar {
+  transition: transform var(--transition-normal);
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 5;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.sidebar-overlay.open {
+  display: block;
+  opacity: 1;
+}
+
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  margin-left: -8px;
+}
+.mobile-menu-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .mobile-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .top-bar-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+}
