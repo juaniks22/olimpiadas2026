@@ -3,7 +3,6 @@ import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
 import ProfileMenu from '../components/ProfileMenu';
-import ProfileBadge from '../components/ProfileBadge';
 import { useThemeToggle } from '../hooks/useThemeToggle';
 import {
   DashboardIcon,
@@ -65,8 +64,6 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-
-        <ProfileBadge username={user?.username} roleLabel="Administrador" />
       </aside>
 
       {/* Main Content */}

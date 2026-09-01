@@ -3,7 +3,6 @@ import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import HeartPulseIcon from '../components/HeartPulseIcon';
 import ProfileMenu from '../components/ProfileMenu';
-import ProfileBadge from '../components/ProfileBadge';
 import { useThemeToggle } from '../hooks/useThemeToggle';
 import { HomeIcon, HistoryIcon } from '../components/SidebarIcons';
 
@@ -52,8 +51,6 @@ export default function GenericLayout() {
             </NavLink>
           ))}
         </nav>
-
-        <ProfileBadge username={user?.username} roleLabel="Jefe de Piso" />
       </aside>
 
       {/* Main Content */}
