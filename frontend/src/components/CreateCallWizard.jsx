@@ -645,7 +645,7 @@ function Step2Patient({
           <FlatpickrDateTimePicker
             id="wiz-admission"
             value={admissionDate}
-            maxDate={new Date()}
+            maxDate="today"
             onChange={setAdmissionDate}
             placeholder="Seleccionar fecha y hora..."
             required
@@ -696,7 +696,7 @@ function Step3Chronology({
               id={f.id}
               value={f.value}
               minDate={f.min || undefined}
-              maxDate={new Date()}
+              maxDate="today"
               onChange={f.set}
               placeholder="Seleccionar fecha y hora..."
             />
@@ -793,7 +793,7 @@ function Step4Clinical({
               <FlatpickrDateTimePicker
                 value={d.performedAt}
                 minDate={callReceivedAt || undefined}
-                maxDate={new Date()}
+                maxDate="today"
                 onChange={val => updateDefib(i, 'performedAt', val)}
                 placeholder="Hora de descarga..."
               />
@@ -852,7 +852,7 @@ function Step4Clinical({
               <FlatpickrDateTimePicker
                 value={d.administeredAt}
                 minDate={callReceivedAt || undefined}
-                maxDate={new Date()}
+                maxDate="today"
                 onChange={val => updateDrug(i, 'administeredAt', val)}
                 placeholder="Hora de administración..."
               />

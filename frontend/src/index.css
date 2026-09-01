@@ -2927,16 +2927,17 @@ table tr:hover td {
   position: relative;
   display: flex;
   align-items: center;
+  gap: 8px;
   width: 100%;
-  gap: 6px;
 }
 
 .flatpickr-datetime-field {
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
   flex: 1;
+  width: 100%;
+  min-width: 0;
 }
 
 .flatpickr-datetime-icon {
@@ -2944,35 +2945,38 @@ table tr:hover td {
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   color: var(--text-tertiary);
   pointer-events: none;
   z-index: 2;
 }
 
 .flatpickr-datetime-input {
-  padding-left: 36px !important;
+  padding-left: 38px !important;
+  padding-right: 14px !important;
   width: 100% !important;
   cursor: pointer;
   font-variant-numeric: tabular-nums;
+  height: 44px;
 }
 
 .flatpickr-datetime-now-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 0 16px;
+  height: 44px;
   background: var(--bg-input);
   border: 1px solid var(--border-input);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-lg);
   color: var(--color-primary);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: all var(--transition-fast);
-  height: 38px;
+  flex-shrink: 0;
 }
 
 .flatpickr-datetime-now-btn:hover {
