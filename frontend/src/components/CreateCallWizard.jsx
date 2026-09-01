@@ -123,6 +123,9 @@ export default function CreateCallWizard({ onClose, onCreated }) {
   const [admissionDate, setAdmissionDate] = useState('');
   const [timeSinceDiscovery, setTimeSinceDiscovery] = useState('');
 
+  // Fecha compartida para autocompletar el mismo día en todos los campos cronológicos
+  const [sharedEventDate, setSharedEventDate] = useState('');
+
   // ─ Paso 3: Cronología ─
   const [callReceivedAt, setCallReceivedAt] = useState('');
   const [teamArrivalAt, setTeamArrivalAt] = useState('');
@@ -450,6 +453,7 @@ export default function CreateCallWizard({ onClose, onCreated }) {
               admissionDate={admissionDate} setAdmissionDate={setAdmissionDate}
               timeSinceDiscovery={timeSinceDiscovery} setTimeSinceDiscovery={setTimeSinceDiscovery}
               origin={origin}
+              sharedEventDate={sharedEventDate} setSharedEventDate={setSharedEventDate}
             />
           )}
           {step === 3 && (
@@ -460,6 +464,7 @@ export default function CreateCallWizard({ onClose, onCreated }) {
               roscAt={roscAt} setRoscAt={setRoscAt}
               eventEndedAt={eventEndedAt} setEventEndedAt={setEventEndedAt}
               callType={callType}
+              sharedEventDate={sharedEventDate} setSharedEventDate={setSharedEventDate}
             />
           )}
           {step === 4 && (
@@ -472,6 +477,7 @@ export default function CreateCallWizard({ onClose, onCreated }) {
               drugs={drugs} setDrugs={setDrugs}
               cartItems={cartItems} areaCart={areaCart}
               callReceivedAt={callReceivedAt}
+              sharedEventDate={sharedEventDate}
             />
           )}
           {step === 5 && (
@@ -580,7 +586,15 @@ function Step2Patient({
   patientTempId, setPatientTempId, patientSex, setPatientSex,
   patientAge, setPatientAge, admissionDate, setAdmissionDate,
   timeSinceDiscovery, setTimeSinceDiscovery, origin,
+  sharedEventDate, setSharedEventDate,
 }) {
+  const handleAdmissionChange = (val) => {
+    setAdmissionDate(val);
+    if (val && val.includes('T')) {
+      const day = val.split('T')[0];
+      if (day) setSharedEventDate(day);
+    }
+  };
   return (
     <div style={sectionStyle}>
       <h3 style={sectionTitleStyle}>Ficha del Paciente</h3>
@@ -645,8 +659,9 @@ function Step2Patient({
           <FlatpickrDateTimePicker
             id="wiz-admission"
             value={admissionDate}
+            baseDate={sharedEventDate}
             maxDate="today"
-            onChange={setAdmissionDate}
+            onChange={handleAdmissionChange}
             placeholder="Seleccionar fecha y hora..."
             required
           />
@@ -670,14 +685,37 @@ function Step3Chronology({
   callReceivedAt, setCallReceivedAt, teamArrivalAt, setTeamArrivalAt,
   cprStartedAt, setCprStartedAt, roscAt, setRoscAt,
   eventEndedAt, setEventEndedAt, callType,
+  sharedEventDate, setSharedEventDate,
 }) {
   const required = callType === 'EMERGENCY';
+
+  const handleTimeChange = (setter) => (val) => {
+    setter(val);
+    if (val && val.includes('T')) {
+      const day = val.split('T')[0];
+      if (day && day !== sharedEventDate) {
+        setSharedEventDate(day);
+        const updateDay = (currentVal, setFn) => {
+          if (currentVal && currentVal.includes('T')) {
+            const timePart = currentVal.split('T')[1];
+            setFn(`${day}T${timePart}`);
+          }
+        };
+        if (setter !== setCallReceivedAt) updateDay(callReceivedAt, setCallReceivedAt);
+        if (setter !== setTeamArrivalAt) updateDay(teamArrivalAt, setTeamArrivalAt);
+        if (setter !== setCprStartedAt) updateDay(cprStartedAt, setCprStartedAt);
+        if (setter !== setRoscAt) updateDay(roscAt, setRoscAt);
+        if (setter !== setEventEndedAt) updateDay(eventEndedAt, setEventEndedAt);
+      }
+    }
+  };
+
   const timeFields = [
-    { id: 'wiz-received', label: `Recepción / Activación del Código${required ? ' *' : ''}`, value: callReceivedAt, set: setCallReceivedAt },
-    { id: 'wiz-arrival', label: `Llegada del Equipo${required ? ' *' : ''}`, value: teamArrivalAt, set: setTeamArrivalAt, min: callReceivedAt },
-    { id: 'wiz-cpr', label: 'Inicio de RCP', value: cprStartedAt, set: setCprStartedAt, min: teamArrivalAt || callReceivedAt },
-    { id: 'wiz-rosc', label: 'Retorno de Circulación Espontánea (RCE)', value: roscAt, set: setRoscAt, min: cprStartedAt || teamArrivalAt || callReceivedAt },
-    { id: 'wiz-end', label: `Fin / Suspensión del Evento${required ? ' *' : ''}`, value: eventEndedAt, set: setEventEndedAt, min: callReceivedAt },
+    { id: 'wiz-received', label: `Recepción / Activación del Código${required ? ' *' : ''}`, value: callReceivedAt, set: handleTimeChange(setCallReceivedAt) },
+    { id: 'wiz-arrival', label: `Llegada del Equipo${required ? ' *' : ''}`, value: teamArrivalAt, set: handleTimeChange(setTeamArrivalAt), min: callReceivedAt },
+    { id: 'wiz-cpr', label: 'Inicio de RCP', value: cprStartedAt, set: handleTimeChange(setCprStartedAt), min: teamArrivalAt || callReceivedAt },
+    { id: 'wiz-rosc', label: 'Retorno de Circulación Espontánea (RCE)', value: roscAt, set: handleTimeChange(setRoscAt), min: cprStartedAt || teamArrivalAt || callReceivedAt },
+    { id: 'wiz-end', label: `Fin / Suspensión del Evento${required ? ' *' : ''}`, value: eventEndedAt, set: handleTimeChange(setEventEndedAt), min: callReceivedAt },
   ];
 
   return (
@@ -688,17 +726,18 @@ function Step3Chronology({
           ? 'Al ser un llamado de Emergencia (Código Azul), Recepción, Llegada del Equipo y Fin del Evento (*) son obligatorios: de ahí se calcula el tiempo de respuesta. El RCE es opcional si no hubo retorno de circulación.'
           : 'Registre la hora exacta de cada hito del evento. El RCE es opcional si no hubo retorno de circulación.'}
       </p>
-      <div style={fieldGridStyle}>
+      <div className="chronology-grid">
         {timeFields.map(f => (
           <div className="input-group" key={f.id}>
             <label htmlFor={f.id}>{f.label}</label>
             <FlatpickrDateTimePicker
               id={f.id}
               value={f.value}
+              baseDate={sharedEventDate}
               minDate={f.min || undefined}
               maxDate="today"
               onChange={f.set}
-              placeholder="Seleccionar fecha y hora..."
+              placeholder="dd/mm/aaaa, --:--"
             />
           </div>
         ))}
@@ -715,6 +754,7 @@ function Step4Clinical({
   postStatus, setPostStatus, suspensionCause, setSuspensionCause,
   defibs, setDefibs, drugs, setDrugs,
   cartItems, areaCart, callReceivedAt,
+  sharedEventDate,
 }) {
   const cartAvailable = areaCart && areaCart.status === 'IN_SERVICE' && cartItems.length > 0;
 
@@ -792,10 +832,11 @@ function Step4Clinical({
               <label style={{ fontSize: '0.75rem' }}>Fecha y Hora</label>
               <FlatpickrDateTimePicker
                 value={d.performedAt}
+                baseDate={sharedEventDate}
                 minDate={callReceivedAt || undefined}
                 maxDate="today"
                 onChange={val => updateDefib(i, 'performedAt', val)}
-                placeholder="Hora de descarga..."
+                placeholder="dd/mm/aaaa, --:--"
               />
             </div>
             <div className="input-group" style={{ margin: 0, minWidth: 80 }}>
@@ -851,10 +892,11 @@ function Step4Clinical({
               <label style={{ fontSize: '0.75rem' }}>Fecha y Hora</label>
               <FlatpickrDateTimePicker
                 value={d.administeredAt}
+                baseDate={sharedEventDate}
                 minDate={callReceivedAt || undefined}
                 maxDate="today"
                 onChange={val => updateDrug(i, 'administeredAt', val)}
-                placeholder="Hora de administración..."
+                placeholder="dd/mm/aaaa, --:--"
               />
             </div>
             <button className="btn btn-sm btn-danger" type="button" onClick={() => removeDrug(i)} style={{ marginBottom: 2 }}>✕</button>

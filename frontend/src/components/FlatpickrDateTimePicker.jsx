@@ -18,6 +18,7 @@ export default function FlatpickrDateTimePicker({
   onChange,
   minDate,
   maxDate,
+  baseDate,
   placeholder = 'dd/mm/aaaa, --:--',
   required = false,
   disabled = false,
@@ -40,6 +41,15 @@ export default function FlatpickrDateTimePicker({
       maxDate: maxDate || undefined,
       allowInput: true,
       disableMobile: true,
+      onOpen: (selectedDates, dateStr, instance) => {
+        // Si no hay fecha seleccionada pero se pasó una fecha base (ej. el día del evento), saltar a ese día
+        if ((!selectedDates || selectedDates.length === 0) && baseDate) {
+          const bDate = new Date(`${baseDate}T12:00:00`);
+          if (!isNaN(bDate.getTime())) {
+            instance.jumpToDate(bDate);
+          }
+        }
+      },
       onChange: (selectedDates) => {
         if (onChange) {
           if (selectedDates && selectedDates.length > 0) {
@@ -58,15 +68,21 @@ export default function FlatpickrDateTimePicker({
     };
   }, []);
 
-  // Sincronizar cambios de valor externo
+  // Sincronizar cambios de valor externo o fecha base
   useEffect(() => {
     if (!fpRef.current) return;
     if (value) {
       fpRef.current.setDate(new Date(value), false);
     } else {
       fpRef.current.clear(false);
+      if (baseDate) {
+        const bDate = new Date(`${baseDate}T12:00:00`);
+        if (!isNaN(bDate.getTime())) {
+          fpRef.current.jumpToDate(bDate);
+        }
+      }
     }
-  }, [value]);
+  }, [value, baseDate]);
 
   // Sincronizar minDate y maxDate dinámicos
   useEffect(() => {

@@ -2984,6 +2984,30 @@ table tr:hover td {
   border-color: var(--color-primary);
 }
 
+/* --- Chronology Grid (Step 3 & Wizard Timelines) --- */
+.chronology-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg) var(--space-md);
+}
+
+.chronology-grid .input-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.chronology-grid .input-group label {
+  min-height: 2.6rem;
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 4px;
+  line-height: 1.25;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 /* Flatpickr Dark Theme Overrides */
 [data-theme="dark"] .flatpickr-calendar {
   background: #222631;
